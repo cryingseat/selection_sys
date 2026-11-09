@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.AuditMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO audit_log
+        (batch_id, actor_id, actor_name, actor_role, action, target_type, target_id, detail, reason, ip)
+        VALUES
+        (#{batchId}, #{actorId}, #{actorName}, #{actorRole}, #{action}, #{targetType}, #{targetId},
+         #{detail}, #{reason}, #{ip})
+    </insert>
+
+    <select id="search" resultType="AuditLog">
+        SELECT * FROM audit_log
+        <where>
+            <if test="batchId != null">AND batch_id = #{batchId}</if>
+            <if test="action != null and action != ''">AND action = #{action}</if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSearch" resultType="long">
+        SELECT COUNT(*) FROM audit_log
+        <where>
+            <if test="batchId != null">AND batch_id = #{batchId}</if>
+            <if test="action != null and action != ''">AND action = #{action}</if>
+        </where>
+    </select>
+</mapper>

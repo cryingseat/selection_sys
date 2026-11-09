@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.AssignmentMapper">
+
+    <sql id="selectDetail">
+        SELECT fa.*, s.student_no, s.name AS student_name, s.major, s.class_name,
+               m.name AS mentor_name, m.title AS mentor_title, l.name AS lab_name,
+               l.direction AS lab_direction, l.training_plan AS lab_training,
+               m.research_direction AS mentor_direction
+        FROM final_assignment fa
+        JOIN student s ON s.id = fa.student_id
+        JOIN mentor m ON m.id = fa.mentor_id
+        JOIN lab l ON l.id = fa.lab_id
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO final_assignment
+        (batch_id, student_id, application_id, mentor_id, lab_id, source, status, confirmed_at, remark)
+        VALUES
+        (#{batchId}, #{studentId}, #{applicationId}, #{mentorId}, #{labId}, #{source}, #{status},
+         #{confirmedAt}, #{remark})
+    </insert>
+
+    <select id="findById" resultType="FinalAssignment">
+        <include refid="selectDetail"/> WHERE fa.id = #{id}
+    </select>
+
+    <select id="findDetailById" resultType="FinalAssignment">
+        <include refid="selectDetail"/> WHERE fa.id = #{id}
+    </select>
+
+    <select id="findByStudentAndBatch" resultType="FinalAssignment">
+        <include refid="selectDetail"/>
+        WHERE fa.batch_id = #{batchId} AND fa.student_id = #{studentId}
+    </select>
+
+    <select id="findByBatch" resultType="FinalAssignment">
+        <include refid="selectDetail"/>
+        WHERE fa.batch_id = #{batchId}
+        ORDER BY fa.lab_id, fa.mentor_id, s.student_no
+    </select>
+
+    <select id="findPublicByBatch" resultType="FinalAssignment">
+        <include refid="selectDetail"/>
+        WHERE fa.batch_id = #{batchId} AND fa.status != 'REVOKED'
+        ORDER BY fa.lab_id, fa.mentor_id, s.student_no
+    </select>
+
+    <select id="findByMentor" resultType="FinalAssignment">
+        <include refid="selectDetail"/>
+        WHERE fa.mentor_id = #{mentorId} AND fa.batch_id = #{batchId}
+          AND fa.status != 'REVOKED'
+        ORDER BY s.student_no
+    </select>
+
+    <select id="findByLab" resultType="FinalAssignment">
+        <include refid="selectDetail"/>
+        WHERE fa.lab_id = #{labId} AND fa.batch_id = #{batchId}
+          AND fa.status != 'REVOKED'
+        ORDER BY fa.mentor_id, s.student_no
+    </select>
+
+    <update id="updateStatus">
+        UPDATE final_assignment SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <update id="updateStatusByBatch">
+        UPDATE final_assignment SET status = #{status}
+        WHERE batch_id = #{batchId} AND status != 'REVOKED'
+    </update>
+
+    <select id="countByMentor" resultType="long">
+        SELECT COUNT(*) FROM final_assignment
+        WHERE mentor_id = #{mentorId} AND batch_id = #{batchId} AND status != 'REVOKED'
+    </select>
+
+    <select id="countByLab" resultType="long">
+        SELECT COUNT(*) FROM final_assignment
+        WHERE lab_id = #{labId} AND batch_id = #{batchId} AND status != 'REVOKED'
+    </select>
+
+    <select id="countByBatch" resultType="long">
+        SELECT COUNT(*) FROM final_assignment WHERE batch_id = #{batchId} AND status != 'REVOKED'
+    </select>
+</mapper>

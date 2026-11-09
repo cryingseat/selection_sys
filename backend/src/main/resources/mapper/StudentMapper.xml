@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.StudentMapper">
+
+    <sql id="baseCols">
+        s.id, s.user_id, s.student_no, s.name, s.gender, s.major, s.class_name, s.grade,
+        s.phone, s.email, s.created_at, s.updated_at, u.enabled
+    </sql>
+
+    <select id="findById" resultType="Student">
+        SELECT <include refid="baseCols"/>, u.account
+        FROM student s JOIN sys_user u ON u.id = s.user_id
+        WHERE s.id = #{id}
+    </select>
+
+    <select id="findByUserId" resultType="Student">
+        SELECT <include refid="baseCols"/>, u.account
+        FROM student s JOIN sys_user u ON u.id = s.user_id
+        WHERE s.user_id = #{userId}
+    </select>
+
+    <select id="findByStudentNo" resultType="Student">
+        SELECT <include refid="baseCols"/>, u.account
+        FROM student s JOIN sys_user u ON u.id = s.user_id
+        WHERE s.student_no = #{studentNo}
+    </select>
+
+    <select id="findAll" resultType="Student">
+        SELECT <include refid="baseCols"/>, u.account
+        FROM student s JOIN sys_user u ON u.id = s.user_id
+        ORDER BY s.student_no
+    </select>
+
+    <select id="search" resultType="Student">
+        SELECT <include refid="baseCols"/>, u.account
+        FROM student s JOIN sys_user u ON u.id = s.user_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (s.student_no LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.major LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.class_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="grade != null and grade != ''">AND s.grade = #{grade}</if>
+            <if test="major != null and major != ''">AND s.major = #{major}</if>
+        </where>
+        ORDER BY s.grade DESC, s.student_no
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSearch" resultType="long">
+        SELECT COUNT(*) FROM student s
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (s.student_no LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.major LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.class_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="grade != null and grade != ''">AND s.grade = #{grade}</if>
+            <if test="major != null and major != ''">AND s.major = #{major}</if>
+        </where>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO student (user_id, student_no, name, gender, major, class_name, grade, phone, email)
+        VALUES (#{userId}, #{studentNo}, #{name}, #{gender}, #{major}, #{className}, #{grade}, #{phone}, #{email})
+    </insert>
+
+    <update id="update">
+        UPDATE student
+        SET name = #{name}, gender = #{gender}, major = #{major}, class_name = #{className},
+            grade = #{grade}, phone = #{phone}, email = #{email}
+        WHERE id = #{id}
+    </update>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM student
+    </select>
+</mapper>

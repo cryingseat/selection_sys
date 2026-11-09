@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.ApplicationMapper">
+
+    <sql id="baseCols">
+        a.id, a.batch_id, a.student_id, a.intro, a.skills, a.project_experience,
+        a.adjustment_preference, a.excluded_lab_ids, a.status, a.version,
+        a.submitted_at, a.created_at, a.updated_at
+    </sql>
+
+    <sql id="joinCols">
+        s.student_no, s.name AS student_name, s.major, s.class_name, s.grade, s.phone, s.email,
+        b.name AS batch_name, b.status AS batch_status
+    </sql>
+
+    <sql id="fromJoin">
+        FROM application a
+        JOIN student s ON s.id = a.student_id
+        JOIN selection_batch b ON b.id = a.batch_id
+    </sql>
+
+    <select id="findById" resultType="Application">
+        SELECT <include refid="baseCols"/>, <include refid="joinCols"/>
+        <include refid="fromJoin"/>
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findDetailById" resultType="Application">
+        SELECT <include refid="baseCols"/>, <include refid="joinCols"/>
+        <include refid="fromJoin"/>
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findByBatchAndStudent" resultType="Application">
+        SELECT <include refid="baseCols"/>, <include refid="joinCols"/>
+        <include refid="fromJoin"/>
+        WHERE a.batch_id = #{batchId} AND a.student_id = #{studentId}
+    </select>
+
+    <select id="findByStudent" resultType="Application">
+        SELECT <include refid="baseCols"/>, <include refid="joinCols"/>
+        <include refid="fromJoin"/>
+        WHERE a.student_id = #{studentId}
+        ORDER BY a.batch_id DESC
+    </select>
+
+    <select id="findByBatchWithStudent" resultType="Application">
+        SELECT <include refid="baseCols"/>, <include refid="joinCols"/>
+        <include refid="fromJoin"/>
+        WHERE a.batch_id = #{batchId}
+        ORDER BY a.submitted_at DESC, a.id
+    </select>
+
+    <select id="search" resultType="Application">
+        SELECT <include refid="baseCols"/>, <include refid="joinCols"/>
+        <include refid="fromJoin"/>
+        <where>
+            <if test="batchId != null">AND a.batch_id = #{batchId}</if>
+            <if test="status != null and status != ''">AND a.status = #{status}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (s.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.student_no LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.major LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY a.batch_id DESC, a.submitted_at DESC, a.id
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSearch" resultType="long">
+        SELECT COUNT(*)
+        FROM application a JOIN student s ON s.id = a.student_id
+        <where>
+            <if test="batchId != null">AND a.batch_id = #{batchId}</if>
+            <if test="status != null and status != ''">AND a.status = #{status}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (s.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.student_no LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.major LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="listUnadmitted" resultType="Application">
+        SELECT <include refid="baseCols"/>, <include refid="joinCols"/>
+        <include refid="fromJoin"/>
+        LEFT JOIN final_assignment fa ON fa.batch_id = a.batch_id AND fa.student_id = a.student_id
+        WHERE a.batch_id = #{batchId}
+          AND a.status IN ('SUBMITTED', 'LOCKED')
+          AND fa.id IS NULL
+        ORDER BY a.id
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO application
+        (batch_id, student_id, intro, skills, project_experience, adjustment_preference,
+         excluded_lab_ids, status, version, submitted_at)
+        VALUES
+        (#{batchId}, #{studentId}, #{intro}, #{skills}, #{projectExperience}, #{adjustmentPreference},
+         #{excludedLabIds}, #{status}, 0, #{submittedAt})
+    </insert>
+
+    <update id="update">
+        UPDATE application
+        SET intro = #{intro}, skills = #{skills}, project_experience = #{projectExperience},
+            adjustment_preference = #{adjustmentPreference}, excluded_lab_ids = #{excludedLabIds},
+            status = #{status}, submitted_at = #{submittedAt}, version = version + 1
+        WHERE id = #{id} AND version = #{version}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE application SET status = #{status}, submitted_at = #{submittedAt}, version = version + 1
+        WHERE id = #{id}
+    </update>
+
+    <select id="lockById" resultType="Application">
+        SELECT <include refid="baseCols"/> FROM application a WHERE a.id = #{id} FOR UPDATE
+    </select>
+
+    <select id="countByBatch" resultType="long">
+        SELECT COUNT(*) FROM application WHERE batch_id = #{batchId}
+    </select>
+
+    <select id="countSubmittedByBatch" resultType="long">
+        SELECT COUNT(*) FROM application
+        WHERE batch_id = #{batchId} AND status IN ('SUBMITTED', 'LOCKED')
+    </select>
+</mapper>

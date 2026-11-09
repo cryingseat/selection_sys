@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.AnnouncementMapper">
+
+    <sql id="selectDetail">
+        SELECT an.*, b.name AS batch_name, u.display_name AS creator_name
+        FROM announcement an
+        LEFT JOIN selection_batch b ON b.id = an.batch_id
+        LEFT JOIN sys_user u ON u.id = an.created_by
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO announcement (batch_id, title, type, content, status, publish_start, publish_end, created_by)
+        VALUES (#{batchId}, #{title}, #{type}, #{content}, #{status}, #{publishStart}, #{publishEnd}, #{createdBy})
+    </insert>
+
+    <update id="update">
+        UPDATE announcement
+        SET batch_id = #{batchId}, title = #{title}, type = #{type}, content = #{content},
+            status = #{status}, publish_start = #{publishStart}, publish_end = #{publishEnd}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findById" resultType="Announcement">
+        <include refid="selectDetail"/> WHERE an.id = #{id}
+    </select>
+
+    <select id="findPublic" resultType="Announcement">
+        <include refid="selectDetail"/>
+        WHERE an.status = 'PUBLISHED'
+          AND (an.publish_start IS NULL OR an.publish_start &lt;= NOW())
+          AND (an.publish_end IS NULL OR an.publish_end &gt;= NOW())
+        ORDER BY an.publish_start DESC, an.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findByBatch" resultType="Announcement">
+        <include refid="selectDetail"/>
+        WHERE an.batch_id = #{batchId}
+        ORDER BY an.id DESC
+    </select>
+
+    <select id="findAll" resultType="Announcement">
+        <include refid="selectDetail"/>
+        ORDER BY an.id DESC
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM announcement WHERE id = #{id}
+    </delete>
+</mapper>

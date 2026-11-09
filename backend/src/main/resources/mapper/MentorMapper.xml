@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.MentorMapper">
+
+    <sql id="baseCols">
+        m.id, m.user_id, m.mentor_no, m.name, m.title, m.lab_id, m.research_direction,
+        m.profile, m.quota, m.enabled, m.created_at, m.updated_at
+    </sql>
+
+    <select id="findById" resultType="Mentor">
+        SELECT <include refid="baseCols"/>, l.name AS lab_name, l.code AS lab_code
+        FROM mentor m JOIN lab l ON l.id = m.lab_id
+        WHERE m.id = #{id}
+    </select>
+
+    <select id="findByUserId" resultType="Mentor">
+        SELECT <include refid="baseCols"/>, l.name AS lab_name, l.code AS lab_code
+        FROM mentor m JOIN lab l ON l.id = m.lab_id
+        WHERE m.user_id = #{userId}
+    </select>
+
+    <select id="findAll" resultType="Mentor">
+        SELECT <include refid="baseCols"/>, l.name AS lab_name, l.code AS lab_code
+        FROM mentor m JOIN lab l ON l.id = m.lab_id
+        ORDER BY m.lab_id, m.id
+    </select>
+
+    <select id="findByLabId" resultType="Mentor">
+        SELECT <include refid="baseCols"/>, l.name AS lab_name, l.code AS lab_code
+        FROM mentor m JOIN lab l ON l.id = m.lab_id
+        WHERE m.lab_id = #{labId} AND m.enabled = 1
+        ORDER BY m.id
+    </select>
+
+    <select id="search" resultType="Mentor">
+        SELECT <include refid="baseCols"/>, l.name AS lab_name, l.code AS lab_code
+        FROM mentor m JOIN lab l ON l.id = m.lab_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (m.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR m.mentor_no LIKE CONCAT('%', #{keyword}, '%')
+                     OR m.research_direction LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="labId != null">AND m.lab_id = #{labId}</if>
+            <if test="enabled != null">AND m.enabled = #{enabled}</if>
+        </where>
+        ORDER BY m.lab_id, m.id
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSearch" resultType="long">
+        SELECT COUNT(*) FROM mentor m
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (m.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR m.mentor_no LIKE CONCAT('%', #{keyword}, '%')
+                     OR m.research_direction LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="labId != null">AND m.lab_id = #{labId}</if>
+            <if test="enabled != null">AND m.enabled = #{enabled}</if>
+        </where>
+    </select>
+
+    <select id="listWithStats" resultType="Mentor">
+        SELECT <include refid="baseCols"/>, l.name AS lab_name, l.code AS lab_code,
+               (SELECT COUNT(*) FROM final_assignment fa
+                 WHERE fa.mentor_id = m.id AND fa.batch_id = #{batchId}
+                   AND fa.status != 'REVOKED') AS confirmed_count,
+               (SELECT COUNT(*) FROM offer o
+                 WHERE o.mentor_id = m.id AND o.batch_id = #{batchId}
+                   AND o.status IN ('OFFERED', 'CONFIRMED')) AS offered_count,
+               (SELECT COUNT(DISTINCT i.application_id) FROM application_intent i
+                 WHERE i.mentor_id = m.id AND i.batch_id = #{batchId}) AS applicant_count
+        FROM mentor m JOIN lab l ON l.id = m.lab_id
+        <where>
+            <if test="labId != null">AND m.lab_id = #{labId}</if>
+        </where>
+        ORDER BY m.lab_id, m.id
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO mentor (user_id, mentor_no, name, title, lab_id, research_direction, profile, quota, enabled)
+        VALUES (#{userId}, #{mentorNo}, #{name}, #{title}, #{labId}, #{researchDirection}, #{profile}, #{quota}, #{enabled})
+    </insert>
+
+    <update id="update">
+        UPDATE mentor
+        SET name = #{name}, title = #{title}, lab_id = #{labId},
+            research_direction = #{researchDirection}, profile = #{profile},
+            quota = #{quota}, enabled = #{enabled}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateQuota">
+        UPDATE mentor SET quota = #{quota} WHERE id = #{id}
+    </update>
+
+    <select id="lockById" resultType="Mentor">
+        SELECT <include refid="baseCols"/> FROM mentor m WHERE m.id = #{id} FOR UPDATE
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM mentor
+    </select>
+</mapper>

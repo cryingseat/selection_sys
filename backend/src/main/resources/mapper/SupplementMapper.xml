@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.SupplementMapper">
+
+    <sql id="roundCols">
+        r.id, r.batch_id, r.round_no, r.title, r.status, r.start_at, r.end_at,
+        r.created_by, r.created_at, r.updated_at,
+        (SELECT COUNT(*) FROM supplement_intent si WHERE si.round_id = r.id) AS intent_count,
+        (SELECT COUNT(*) FROM offer o WHERE o.batch_id = r.batch_id AND o.round_no = r.round_no
+            AND o.source IN ('SUPPLEMENT', 'PROMOTION') AND o.status IN ('OFFERED', 'CONFIRMED')) AS offer_count
+    </sql>
+
+    <insert id="insertRound" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO supplement_round (batch_id, round_no, title, status, start_at, end_at, created_by)
+        VALUES (#{batchId}, #{roundNo}, #{title}, #{status}, #{startAt}, #{endAt}, #{createdBy})
+    </insert>
+
+    <select id="findRoundById" resultType="SupplementRound">
+        SELECT <include refid="roundCols"/> FROM supplement_round r WHERE r.id = #{id}
+    </select>
+
+    <select id="findRoundByBatchAndNo" resultType="SupplementRound">
+        SELECT <include refid="roundCols"/> FROM supplement_round r
+        WHERE r.batch_id = #{batchId} AND r.round_no = #{roundNo}
+    </select>
+
+    <select id="findRoundsByBatch" resultType="SupplementRound">
+        SELECT <include refid="roundCols"/> FROM supplement_round r
+        WHERE r.batch_id = #{batchId}
+        ORDER BY r.round_no
+    </select>
+
+    <select id="findOpenRound" resultType="SupplementRound">
+        SELECT <include refid="roundCols"/> FROM supplement_round r
+        WHERE r.batch_id = #{batchId} AND r.status = 'OPEN'
+        ORDER BY r.round_no DESC LIMIT 1
+    </select>
+
+    <update id="updateRoundStatus">
+        UPDATE supplement_round
+        SET status = #{status},
+            start_at = IFNULL(#{startAt}, start_at),
+            end_at = IFNULL(#{endAt}, end_at)
+        WHERE id = #{id}
+    </update>
+
+    <sql id="intentSelect">
+        SELECT si.*, s.student_no, s.name AS student_name, s.major, s.class_name,
+               m.name AS mentor_name, m.title AS mentor_title, m.lab_id,
+               m.quota AS mentor_quota, m.research_direction,
+               l.name AS lab_name, l.total_quota AS lab_quota, r.round_no
+        FROM supplement_intent si
+        JOIN supplement_round r ON r.id = si.round_id
+        JOIN student s ON s.id = si.student_id
+        JOIN mentor m ON m.id = si.mentor_id
+        JOIN lab l ON l.id = m.lab_id
+    </sql>
+
+    <insert id="insertIntent" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO supplement_intent
+        (round_id, batch_id, student_id, mentor_id, sort_no, status, waitlist_rank, comment)
+        VALUES
+        (#{roundId}, #{batchId}, #{studentId}, #{mentorId}, #{sortNo}, #{status}, #{waitlistRank}, #{comment})
+    </insert>
+
+    <select id="findIntentById" resultType="SupplementIntent">
+        <include refid="intentSelect"/> WHERE si.id = #{id}
+    </select>
+
+    <select id="findIntentByRoundStudentMentor" resultType="SupplementIntent">
+        <include refid="intentSelect"/>
+        WHERE si.round_id = #{roundId} AND si.student_id = #{studentId} AND si.mentor_id = #{mentorId}
+    </select>
+
+    <select id="findIntentsByRound" resultType="SupplementIntent">
+        <include refid="intentSelect"/>
+        WHERE si.round_id = #{roundId}
+        ORDER BY si.sort_no
+    </select>
+
+    <select id="findIntentsByStudent" resultType="SupplementIntent">
+        <include refid="intentSelect"/>
+        WHERE si.round_id = #{roundId} AND si.student_id = #{studentId}
+        ORDER BY si.sort_no
+    </select>
+
+    <select id="findIntentsByMentor" resultType="SupplementIntent">
+        <include refid="intentSelect"/>
+        WHERE si.mentor_id = #{mentorId} AND si.batch_id = #{batchId}
+        <if test="status != null and status != ''">AND si.status = #{status}</if>
+        ORDER BY r.round_no, si.sort_no
+    </select>
+
+    <update id="updateIntentStatus">
+        UPDATE supplement_intent
+        SET status = #{status}, waitlist_rank = #{waitlistRank}, comment = #{comment},
+            decided_by = #{decidedBy}, decided_at = #{decidedAt}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteIntentsByRoundAndStudent">
+        DELETE FROM supplement_intent WHERE round_id = #{roundId} AND student_id = #{studentId}
+    </delete>
+
+    <select id="countIntentsByRound" resultType="long">
+        SELECT COUNT(*) FROM supplement_intent WHERE round_id = #{roundId}
+    </select>
+
+    <select id="countRoundsByBatch" resultType="long">
+        SELECT COUNT(*) FROM supplement_round WHERE batch_id = #{batchId}
+    </select>
+</mapper>

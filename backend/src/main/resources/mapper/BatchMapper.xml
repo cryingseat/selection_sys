@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.BatchMapper">
+
+    <sql id="cols">
+        id, name, grade_scope, major_scope, description, rules, status,
+        lecture_at, open_day_start, open_day_end, intent_start, intent_end,
+        interview_start, interview_end, confirm_start, confirm_end,
+        supplement_start, supplement_end, adjust_start, adjust_end,
+        publicity_start, publicity_end, created_by, created_at, updated_at
+    </sql>
+
+    <select id="findById" resultType="SelectionBatch">
+        SELECT <include refid="cols"/> FROM selection_batch WHERE id = #{id}
+    </select>
+
+    <select id="findCurrent" resultType="SelectionBatch">
+        SELECT <include refid="cols"/> FROM selection_batch
+        ORDER BY (status NOT IN ('DRAFT', 'FINISHED')) DESC, updated_at DESC, id DESC
+        LIMIT 1
+    </select>
+
+    <select id="findAll" resultType="SelectionBatch">
+        SELECT <include refid="cols"/> FROM selection_batch ORDER BY id DESC
+    </select>
+
+    <select id="search" resultType="SelectionBatch">
+        SELECT <include refid="cols"/> FROM selection_batch
+        <where>
+            <if test="status != null and status != ''">AND status = #{status}</if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSearch" resultType="long">
+        SELECT COUNT(*) FROM selection_batch
+        <where>
+            <if test="status != null and status != ''">AND status = #{status}</if>
+        </where>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO selection_batch
+        (name, grade_scope, major_scope, description, rules, status,
+         lecture_at, open_day_start, open_day_end, intent_start, intent_end,
+         interview_start, interview_end, confirm_start, confirm_end,
+         supplement_start, supplement_end, adjust_start, adjust_end,
+         publicity_start, publicity_end, created_by)
+        VALUES
+        (#{name}, #{gradeScope}, #{majorScope}, #{description}, #{rules}, #{status},
+         #{lectureAt}, #{openDayStart}, #{openDayEnd}, #{intentStart}, #{intentEnd},
+         #{interviewStart}, #{interviewEnd}, #{confirmStart}, #{confirmEnd},
+         #{supplementStart}, #{supplementEnd}, #{adjustStart}, #{adjustEnd},
+         #{publicityStart}, #{publicityEnd}, #{createdBy})
+    </insert>
+
+    <update id="update">
+        UPDATE selection_batch
+        SET name = #{name}, grade_scope = #{gradeScope}, major_scope = #{majorScope},
+            description = #{description}, rules = #{rules}, status = #{status},
+            lecture_at = #{lectureAt}, open_day_start = #{openDayStart}, open_day_end = #{openDayEnd},
+            intent_start = #{intentStart}, intent_end = #{intentEnd},
+            interview_start = #{interviewStart}, interview_end = #{interviewEnd},
+            confirm_start = #{confirmStart}, confirm_end = #{confirmEnd},
+            supplement_start = #{supplementStart}, supplement_end = #{supplementEnd},
+            adjust_start = #{adjustStart}, adjust_end = #{adjustEnd},
+            publicity_start = #{publicityStart}, publicity_end = #{publicityEnd}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE selection_batch SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM selection_batch
+    </select>
+</mapper>

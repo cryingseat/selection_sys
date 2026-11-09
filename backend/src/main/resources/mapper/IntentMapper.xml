@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.IntentMapper">
+
+    <sql id="selectDetail">
+        SELECT i.*, m.name AS mentor_name, m.title AS mentor_title, m.mentor_no, m.lab_id,
+               m.research_direction, m.quota AS mentor_quota,
+               l.name AS lab_name, l.code AS lab_code, l.total_quota AS lab_quota,
+               s.student_no, s.name AS student_name, s.major, s.class_name, s.grade,
+               a.intro AS application_intro, a.skills AS application_skills,
+               a.project_experience AS application_project
+        FROM application_intent i
+        JOIN mentor m ON m.id = i.mentor_id
+        JOIN lab l ON l.id = m.lab_id
+        JOIN application a ON a.id = i.application_id
+        JOIN student s ON s.id = i.student_id
+    </sql>
+
+    <select id="findById" resultType="ApplicationIntent">
+        <include refid="selectDetail"/> WHERE i.id = #{id}
+    </select>
+
+    <select id="findDetailById" resultType="ApplicationIntent">
+        <include refid="selectDetail"/> WHERE i.id = #{id}
+    </select>
+
+    <select id="findByApplicationId" resultType="ApplicationIntent">
+        <include refid="selectDetail"/>
+        WHERE i.application_id = #{applicationId}
+        ORDER BY i.sort_no
+    </select>
+
+    <select id="findByBatch" resultType="ApplicationIntent">
+        <include refid="selectDetail"/>
+        WHERE i.batch_id = #{batchId}
+        ORDER BY i.application_id, i.sort_no
+    </select>
+
+    <select id="findByStudentAndBatch" resultType="ApplicationIntent">
+        <include refid="selectDetail"/>
+        WHERE i.student_id = #{studentId} AND i.batch_id = #{batchId}
+        ORDER BY i.sort_no
+    </select>
+
+    <select id="findByMentorAndBatch" resultType="ApplicationIntent">
+        <include refid="selectDetail"/>
+        <where>
+            AND i.mentor_id = #{mentorId}
+            <if test="batchId != null">AND i.batch_id = #{batchId}</if>
+            <if test="status != null and status != ''">AND i.status = #{status}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (s.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.student_no LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.major LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.class_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY i.created_at DESC, s.student_no
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByMentorAndBatch" resultType="long">
+        SELECT COUNT(*)
+        FROM application_intent i JOIN student s ON s.id = i.student_id
+        <where>
+            AND i.mentor_id = #{mentorId}
+            <if test="batchId != null">AND i.batch_id = #{batchId}</if>
+            <if test="status != null and status != ''">AND i.status = #{status}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (s.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.student_no LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.major LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.class_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="findWaitlistByMentor" resultType="ApplicationIntent">
+        <include refid="selectDetail"/>
+        WHERE i.mentor_id = #{mentorId} AND i.batch_id = #{batchId} AND i.status = 'WAITLISTED'
+        ORDER BY IFNULL(i.waitlist_rank, 9999), i.id
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO application_intent
+        (application_id, batch_id, student_id, mentor_id, sort_no, status, waitlist_rank, comment)
+        VALUES
+        (#{applicationId}, #{batchId}, #{studentId}, #{mentorId}, #{sortNo}, #{status}, #{waitlistRank}, #{comment})
+    </insert>
+
+    <delete id="deleteByApplicationId">
+        DELETE FROM application_intent WHERE application_id = #{applicationId}
+    </delete>
+
+    <update id="updateDecision">
+        UPDATE application_intent
+        SET status = #{status}, waitlist_rank = #{waitlistRank}, comment = #{comment},
+            decided_by = #{decidedBy}, decided_at = #{decidedAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE application_intent SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <update id="updateWaitlistRank">
+        UPDATE application_intent SET waitlist_rank = #{waitlistRank} WHERE id = #{id}
+    </update>
+
+    <update id="updateStatusByApplication">
+        UPDATE application_intent SET status = #{status} WHERE application_id = #{applicationId}
+    </update>
+
+    <select id="countByMentorAndStatus" resultType="long">
+        SELECT COUNT(*) FROM application_intent
+        WHERE mentor_id = #{mentorId} AND batch_id = #{batchId} AND status = #{status}
+    </select>
+
+    <select id="countPendingByMentor" resultType="long">
+        SELECT COUNT(*) FROM application_intent
+        WHERE mentor_id = #{mentorId} AND batch_id = #{batchId} AND status = 'PENDING'
+    </select>
+
+    <select id="countByBatch" resultType="long">
+        SELECT COUNT(*) FROM application_intent WHERE batch_id = #{batchId}
+    </select>
+</mapper>

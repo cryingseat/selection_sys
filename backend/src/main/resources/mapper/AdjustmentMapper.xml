@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.AdjustmentMapper">
+
+    <sql id="selectDetail">
+        SELECT ar.*, s.student_no, s.name AS student_name,
+               fm.name AS from_mentor_name, fl.name AS from_lab_name,
+               tm.name AS to_mentor_name, tl.name AS to_lab_name,
+               u.display_name AS operator_name
+        FROM adjustment_record ar
+        JOIN student s ON s.id = ar.student_id
+        LEFT JOIN mentor fm ON fm.id = ar.from_mentor_id
+        LEFT JOIN lab fl ON fl.id = ar.from_lab_id
+        LEFT JOIN mentor tm ON tm.id = ar.to_mentor_id
+        LEFT JOIN lab tl ON tl.id = ar.to_lab_id
+        LEFT JOIN sys_user u ON u.id = ar.operator_id
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO adjustment_record
+        (batch_id, student_id, from_mentor_id, from_lab_id, to_mentor_id, to_lab_id,
+         type, status, reason, operator_id)
+        VALUES
+        (#{batchId}, #{studentId}, #{fromMentorId}, #{fromLabId}, #{toMentorId}, #{toLabId},
+         #{type}, #{status}, #{reason}, #{operatorId})
+    </insert>
+
+    <select id="findById" resultType="AdjustmentRecord">
+        <include refid="selectDetail"/> WHERE ar.id = #{id}
+    </select>
+
+    <select id="findByBatch" resultType="AdjustmentRecord">
+        <include refid="selectDetail"/>
+        WHERE ar.batch_id = #{batchId}
+        ORDER BY ar.created_at DESC, ar.id DESC
+    </select>
+
+    <select id="findByStudent" resultType="AdjustmentRecord">
+        <include refid="selectDetail"/>
+        WHERE ar.batch_id = #{batchId} AND ar.student_id = #{studentId}
+        ORDER BY ar.created_at DESC
+    </select>
+
+    <select id="countByBatch" resultType="long">
+        SELECT COUNT(*) FROM adjustment_record WHERE batch_id = #{batchId}
+    </select>
+</mapper>

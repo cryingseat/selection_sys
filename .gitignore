@@ -1,0 +1,27 @@
+# 构建产物
+backend/target/
+frontend/dist/
+frontend/node_modules/
+
+# 本机运行缓存（项目根目录下的离线 Maven / npm / MySQL / 浏览器 profile）
+.m2repo/
+.npm-cache/
+.mysql-data/
+.chrome-profile/
+.chrome-profile2/
+.chrome-student/
+.chrome-student2/
+.chrome-mentor/
+.chrome-admin/
+.chrome-admin2/
+
+# IDE / 系统
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+*.log
+
+# 运行时上传（如后续扩展）
+uploads/

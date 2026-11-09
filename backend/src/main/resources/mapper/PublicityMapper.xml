@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.PublicityMapper">
+
+    <sql id="selectDetail">
+        SELECT p.*, b.name AS batch_name,
+               (SELECT COUNT(*) FROM final_assignment fa
+                 WHERE fa.batch_id = p.batch_id AND fa.status != 'REVOKED') AS admitted_count
+        FROM publicity p
+        JOIN selection_batch b ON b.id = p.batch_id
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO publicity
+        (batch_id, title, content, start_at, end_at, status, published_by, published_at, closed_at)
+        VALUES
+        (#{batchId}, #{title}, #{content}, #{startAt}, #{endAt}, #{status}, #{publishedBy},
+         #{publishedAt}, #{closedAt})
+    </insert>
+
+    <select id="findById" resultType="Publicity">
+        <include refid="selectDetail"/> WHERE p.id = #{id}
+    </select>
+
+    <select id="findDetailById" resultType="Publicity">
+        <include refid="selectDetail"/> WHERE p.id = #{id}
+    </select>
+
+    <select id="findCurrentByBatch" resultType="Publicity">
+        <include refid="selectDetail"/>
+        WHERE p.batch_id = #{batchId}
+        ORDER BY p.id DESC LIMIT 1
+    </select>
+
+    <select id="findPublishedOrClosed" resultType="Publicity">
+        <include refid="selectDetail"/>
+        WHERE p.batch_id = #{batchId} AND p.status IN ('PUBLISHED', 'CLOSED')
+        ORDER BY p.id DESC LIMIT 1
+    </select>
+
+    <select id="findByBatch" resultType="Publicity">
+        <include refid="selectDetail"/>
+        WHERE p.batch_id = #{batchId}
+        ORDER BY p.id DESC
+    </select>
+
+    <update id="updateDraft">
+        UPDATE publicity
+        SET title = #{title}, content = #{content}, start_at = #{startAt}, end_at = #{endAt}
+        WHERE id = #{id} AND status = 'DRAFT'
+    </update>
+
+    <update id="updateStatus">
+        UPDATE publicity
+        SET status = #{status},
+            published_by = IFNULL(#{publishedBy}, published_by),
+            published_at = IFNULL(#{publishedAt}, published_at),
+            closed_at = IFNULL(#{closedAt}, closed_at)
+        WHERE id = #{id}
+    </update>
+
+    <select id="lockById" resultType="Publicity">
+        SELECT * FROM publicity WHERE id = #{id} FOR UPDATE
+    </select>
+</mapper>

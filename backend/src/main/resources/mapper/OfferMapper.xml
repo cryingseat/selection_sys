@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.OfferMapper">
+
+    <sql id="selectDetail">
+        SELECT o.*, s.student_no, s.name AS student_name, s.major, s.class_name,
+               m.name AS mentor_name, l.name AS lab_name
+        FROM offer o
+        JOIN student s ON s.id = o.student_id
+        JOIN mentor m ON m.id = o.mentor_id
+        JOIN lab l ON l.id = o.lab_id
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO offer
+        (batch_id, student_id, mentor_id, lab_id, application_id, intent_id, supplement_intent_id,
+         source, status, round_no, created_by)
+        VALUES
+        (#{batchId}, #{studentId}, #{mentorId}, #{labId}, #{applicationId}, #{intentId},
+         #{supplementIntentId}, #{source}, #{status}, #{roundNo}, #{createdBy})
+    </insert>
+
+    <select id="findById" resultType="Offer">
+        <include refid="selectDetail"/> WHERE o.id = #{id}
+    </select>
+
+    <select id="findDetailById" resultType="Offer">
+        <include refid="selectDetail"/> WHERE o.id = #{id}
+    </select>
+
+    <select id="findByStudent" resultType="Offer">
+        <include refid="selectDetail"/>
+        WHERE o.batch_id = #{batchId} AND o.student_id = #{studentId}
+        ORDER BY o.created_at DESC, o.id DESC
+    </select>
+
+    <select id="findByMentor" resultType="Offer">
+        <include refid="selectDetail"/>
+        WHERE o.batch_id = #{batchId} AND o.mentor_id = #{mentorId}
+        ORDER BY o.created_at DESC, o.id DESC
+    </select>
+
+    <select id="findByBatch" resultType="Offer">
+        <include refid="selectDetail"/>
+        WHERE o.batch_id = #{batchId}
+        <if test="status != null and status != ''">AND o.status = #{status}</if>
+        ORDER BY o.id
+    </select>
+
+    <update id="updateStatus">
+        UPDATE offer SET status = #{status}, confirmed_at = #{confirmedAt} WHERE id = #{id}
+    </update>
+
+    <update id="releaseOtherOffers">
+        UPDATE offer SET status = 'RELEASED'
+        WHERE student_id = #{studentId} AND batch_id = #{batchId}
+          AND id != #{keepOfferId} AND status = 'OFFERED'
+    </update>
+
+    <update id="expireOffersOfStudent">
+        UPDATE offer SET status = 'EXPIRED'
+        WHERE student_id = #{studentId} AND batch_id = #{batchId} AND status = 'OFFERED'
+    </update>
+
+    <select id="countActiveByMentor" resultType="long">
+        SELECT COUNT(*) FROM offer
+        WHERE mentor_id = #{mentorId} AND batch_id = #{batchId}
+          AND status IN ('OFFERED', 'CONFIRMED')
+    </select>
+
+    <select id="countActiveByLab" resultType="long">
+        SELECT COUNT(*) FROM offer
+        WHERE lab_id = #{labId} AND batch_id = #{batchId}
+          AND status IN ('OFFERED', 'CONFIRMED')
+    </select>
+
+    <select id="countByBatch" resultType="long">
+        SELECT COUNT(*) FROM offer
+        WHERE batch_id = #{batchId}
+        <if test="status != null and status != ''">AND status = #{status}</if>
+    </select>
+
+    <select id="lockById" resultType="Offer">
+        SELECT * FROM offer WHERE id = #{id} FOR UPDATE
+    </select>
+</mapper>

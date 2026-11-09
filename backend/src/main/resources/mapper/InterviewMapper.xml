@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.labselection.mapper.InterviewMapper">
+
+    <sql id="selectDetail">
+        SELECT iv.*, s.student_no, s.name AS student_name, s.major, s.class_name,
+               l.name AS lab_name, m.name AS mentor_name,
+               a.intro AS application_intro, a.skills AS application_skills
+        FROM interview iv
+        JOIN application a ON a.id = iv.application_id
+        JOIN student s ON s.id = a.student_id
+        JOIN lab l ON l.id = iv.lab_id
+        LEFT JOIN mentor m ON m.id = iv.mentor_id
+    </sql>
+
+    <select id="findById" resultType="Interview">
+        <include refid="selectDetail"/> WHERE iv.id = #{id}
+    </select>
+
+    <select id="findDetailById" resultType="Interview">
+        <include refid="selectDetail"/> WHERE iv.id = #{id}
+    </select>
+
+    <select id="findByApplicationAndLab" resultType="Interview">
+        <include refid="selectDetail"/>
+        WHERE iv.application_id = #{applicationId} AND iv.lab_id = #{labId}
+    </select>
+
+    <select id="findByApplication" resultType="Interview">
+        <include refid="selectDetail"/>
+        WHERE iv.application_id = #{applicationId}
+        ORDER BY iv.lab_id
+    </select>
+
+    <select id="findByMentor" resultType="Interview">
+        <include refid="selectDetail"/>
+        WHERE iv.batch_id = #{batchId}
+          AND iv.lab_id = (SELECT lab_id FROM mentor WHERE id = #{mentorId})
+        ORDER BY iv.scheduled_at, iv.id
+    </select>
+
+    <select id="findByBatch" resultType="Interview">
+        <include refid="selectDetail"/>
+        WHERE iv.batch_id = #{batchId}
+        ORDER BY iv.scheduled_at, iv.id
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO interview
+        (batch_id, application_id, lab_id, mentor_id, scheduled_at, location, score, comment,
+         conclusion, status, recorded_by, recorded_at)
+        VALUES
+        (#{batchId}, #{applicationId}, #{labId}, #{mentorId}, #{scheduledAt}, #{location}, #{score},
+         #{comment}, #{conclusion}, #{status}, #{recordedBy}, #{recordedAt})
+    </insert>
+
+    <update id="update">
+        UPDATE interview
+        SET scheduled_at = #{scheduledAt}, location = #{location}, score = #{score},
+            comment = #{comment}, conclusion = #{conclusion}, status = #{status},
+            mentor_id = #{mentorId}, recorded_by = #{recordedBy}, recorded_at = #{recordedAt}
+        WHERE id = #{id}
+    </update>
+
+    <select id="countCompletedByMentor" resultType="int">
+        SELECT COUNT(*) FROM interview
+        WHERE batch_id = #{batchId}
+          AND lab_id = (SELECT lab_id FROM mentor WHERE id = #{mentorId})
+          AND status = 'COMPLETED'
+    </select>
+
+    <select id="existsCompleted" resultType="int">
+        SELECT COUNT(*) FROM interview
+        WHERE application_id = #{applicationId} AND lab_id = #{labId} AND status = 'COMPLETED'
+    </select>
+</mapper>
