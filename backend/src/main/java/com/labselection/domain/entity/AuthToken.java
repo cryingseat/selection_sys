@@ -19,4 +19,6 @@ public class AuthToken {
     private String account;
     private String displayName;
     private Role role;
+    private Long collegeId;
+    private String collegeName;
 }

@@ -32,6 +32,7 @@ public enum ErrorCode {
     SUPPLEMENT_CLOSED(40025, "补录轮次未开放或已结束", HttpStatus.BAD_REQUEST),
     ACCOUNT_DISABLED(40026, "账号已被停用", HttpStatus.FORBIDDEN),
     BAD_CREDENTIALS(40027, "账号或密码错误", HttpStatus.BAD_REQUEST),
+    COLLEGE_MISMATCH(40028, "账号不属于所选学院，请重新选择", HttpStatus.BAD_REQUEST),
     CONFLICT(40029, "数据已被其他操作修改，请刷新后重试", HttpStatus.CONFLICT),
 
     INTERNAL_ERROR(50001, "服务器开小差了，请稍后重试", HttpStatus.INTERNAL_SERVER_ERROR);

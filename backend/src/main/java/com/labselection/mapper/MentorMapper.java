@@ -24,7 +24,9 @@ public interface MentorMapper {
                      @Param("labId") Long labId,
                      @Param("enabled") Boolean enabled);
 
-    List<Mentor> listWithStats(@Param("batchId") Long batchId, @Param("labId") Long labId);
+    List<Mentor> listWithStats(@Param("batchId") Long batchId,
+                               @Param("collegeId") Long collegeId,
+                               @Param("labId") Long labId);
 
     int insert(Mentor mentor);
 

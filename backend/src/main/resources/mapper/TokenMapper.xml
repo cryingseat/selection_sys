@@ -9,9 +9,10 @@
 
     <select id="findValid" resultType="AuthToken">
         SELECT t.id, t.user_id, t.token_hash, t.expires_at, t.revoked, t.created_at, t.last_used_at,
-               u.account, u.display_name, u.role
+               u.account, u.display_name, u.role, u.college_id, c.name AS college_name
         FROM auth_token t
         JOIN sys_user u ON u.id = t.user_id
+        LEFT JOIN college c ON c.id = u.college_id
         WHERE t.token_hash = #{hash}
           AND t.revoked = 0
           AND t.expires_at &gt; #{now}

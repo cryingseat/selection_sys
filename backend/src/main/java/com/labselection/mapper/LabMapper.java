@@ -12,16 +12,19 @@ public interface LabMapper {
 
     List<Lab> findAll();
 
-    List<Lab> findActive();
+    List<Lab> findActive(@Param("collegeId") Long collegeId);
 
     List<Lab> search(@Param("keyword") String keyword,
                      @Param("status") String status,
+                     @Param("collegeId") Long collegeId,
                      @Param("offset") int offset,
                      @Param("limit") int limit);
 
-    long countSearch(@Param("keyword") String keyword, @Param("status") String status);
+    long countSearch(@Param("keyword") String keyword,
+                     @Param("status") String status,
+                     @Param("collegeId") Long collegeId);
 
-    List<Lab> listWithStats(@Param("batchId") Long batchId);
+    List<Lab> listWithStats(@Param("batchId") Long batchId, @Param("collegeId") Long collegeId);
 
     int insert(Lab lab);
 

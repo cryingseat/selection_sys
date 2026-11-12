@@ -7,6 +7,7 @@ export const authApi = {
 }
 
 export const publicApi = {
+  colleges: () => client.get('/public/colleges'),
   home: () => client.get('/public/home'),
   labs: () => client.get('/public/labs'),
   lab: (id) => client.get(`/public/labs/${id}`),

@@ -1,5 +1,6 @@
 package com.labselection.controller;
 
+import com.labselection.auth.PublicAccess;
 import com.labselection.common.ApiResponse;
 import com.labselection.dto.LoginRequest;
 import com.labselection.dto.LoginResponse;
@@ -21,6 +22,7 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @PublicAccess
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.ok(authService.login(request));

@@ -4,6 +4,7 @@ import com.labselection.auth.AuthContext;
 import com.labselection.common.BusinessException;
 import com.labselection.common.ErrorCode;
 import com.labselection.domain.entity.ApplicationIntent;
+import com.labselection.domain.entity.Lab;
 import com.labselection.domain.entity.Mentor;
 import com.labselection.domain.entity.Offer;
 import com.labselection.domain.entity.SelectionBatch;
@@ -18,6 +19,7 @@ import com.labselection.domain.enums.SupplementStatus;
 import com.labselection.dto.SupplementRoundRequest;
 import com.labselection.mapper.AssignmentMapper;
 import com.labselection.mapper.IntentMapper;
+import com.labselection.mapper.LabMapper;
 import com.labselection.mapper.MentorMapper;
 import com.labselection.mapper.OfferMapper;
 import com.labselection.mapper.SupplementMapper;
@@ -44,6 +46,7 @@ public class SupplementService {
     private final OfferMapper offerMapper;
     private final AssignmentMapper assignmentMapper;
     private final MentorMapper mentorMapper;
+    private final LabMapper labMapper;
     private final SelectionService selectionService;
     private final AuditService auditService;
 
@@ -170,8 +173,10 @@ public class SupplementService {
             throw new BusinessException(ErrorCode.SUPPLEMENT_CLOSED, "补录轮次未开放");
         }
 
+        java.util.Set<Long> collegeLabIds = collegeLabIds(batch.getId());
         List<ApplicationIntent> waitlists = intentMapper.findByBatch(batch.getId()).stream()
                 .filter(i -> i.getStatus() == IntentStatus.WAITLISTED)
+                .filter(i -> collegeLabIds.contains(i.getLabId()))
                 .sorted(Comparator.comparing((ApplicationIntent i) -> i.getMentorId())
                         .thenComparing(i -> i.getWaitlistRank() == null ? 9999 : i.getWaitlistRank()))
                 .toList();
@@ -224,8 +229,10 @@ public class SupplementService {
 
     public Map<String, Object> waitlistOverview(Long batchId) {
         SelectionBatch batch = batchId == null ? stageGuard.current() : stageGuard.require(batchId);
+        java.util.Set<Long> collegeLabIds = collegeLabIds(batch.getId());
         List<ApplicationIntent> waitlists = intentMapper.findByBatch(batch.getId()).stream()
                 .filter(i -> i.getStatus() == IntentStatus.WAITLISTED)
+                .filter(i -> collegeLabIds.contains(i.getLabId()))
                 .sorted(Comparator.comparing((ApplicationIntent i) -> i.getMentorId())
                         .thenComparing(i -> i.getWaitlistRank() == null ? 9999 : i.getWaitlistRank()))
                 .toList();
@@ -258,5 +265,15 @@ public class SupplementService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "补录轮次不存在");
         }
         return round;
+    }
+
+    private java.util.Set<Long> collegeLabIds(Long batchId) {
+        Long collegeId = AuthContext.get().collegeId();
+        if (collegeId == null) {
+            return java.util.Set.of();
+        }
+        return labMapper.listWithStats(batchId, collegeId).stream()
+                .map(Lab::getId)
+                .collect(Collectors.toSet());
     }
 }

@@ -50,7 +50,8 @@ public class TokenService {
             return null;
         }
         tokenMapper.touch(token.getId());
-        return new CurrentUser(token.getUserId(), token.getAccount(), token.getDisplayName(), token.getRole());
+        return new CurrentUser(token.getUserId(), token.getAccount(), token.getDisplayName(), token.getRole(),
+                token.getCollegeId(), token.getCollegeName());
     }
 
     @Transactional

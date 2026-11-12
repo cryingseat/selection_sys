@@ -14,22 +14,39 @@ USE `selection_sys`;
 --       关键唯一约束用于兜底“一人一组、最多三个意向”等规则。
 -- ============================================================
 
+CREATE TABLE IF NOT EXISTS `college` (
+    `id`           BIGINT       NOT NULL AUTO_INCREMENT,
+    `code`         VARCHAR(32)  NOT NULL,
+    `name`         VARCHAR(128) NOT NULL,
+    `intro`        VARCHAR(500) NULL,
+    `accent_color` VARCHAR(16)  NULL COMMENT '学院主题色，用于筛选圆点',
+    `sort_order`   INT          NOT NULL DEFAULT 0,
+    `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_college_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学院';
+
 CREATE TABLE IF NOT EXISTS `sys_user` (
     `id`            BIGINT       NOT NULL AUTO_INCREMENT,
     `account`       VARCHAR(64)  NOT NULL COMMENT '登录账号：学号/工号/admin',
     `password_hash` VARCHAR(255) NOT NULL COMMENT 'PBKDF2-SHA256 加盐摘要',
     `display_name`  VARCHAR(64)  NOT NULL COMMENT '显示姓名',
     `role`          VARCHAR(20)  NOT NULL COMMENT 'STUDENT/MENTOR/ADMIN',
+    `college_id`    BIGINT       NULL COMMENT '所属学院；登录时必须与所选学院一致',
     `enabled`       TINYINT(1)   NOT NULL DEFAULT 1,
     `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_user_account` (`account`),
-    KEY `idx_user_role` (`role`)
+    KEY `idx_user_role` (`role`),
+    KEY `idx_user_college` (`college_id`),
+    CONSTRAINT `fk_user_college` FOREIGN KEY (`college_id`) REFERENCES `college` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统账号';
 
 CREATE TABLE IF NOT EXISTS `lab` (
     `id`             BIGINT       NOT NULL AUTO_INCREMENT,
+    `college_id`     BIGINT       NOT NULL,
     `code`           VARCHAR(32)  NOT NULL,
     `name`           VARCHAR(128) NOT NULL,
     `intro`          TEXT         NULL,
@@ -37,18 +54,23 @@ CREATE TABLE IF NOT EXISTS `lab` (
     `training_plan`  TEXT         NULL COMMENT '培养内容与方式',
     `requirements`   TEXT         NULL COMMENT '选拔要求',
     `contact`        VARCHAR(128) NULL,
+    `location`       VARCHAR(128) NULL COMMENT '实训室位置',
+    `cover_image`    VARCHAR(255) NULL COMMENT '空间封面图',
     `total_quota`    INT          NOT NULL DEFAULT 0,
     `status`         VARCHAR(16)  NOT NULL DEFAULT 'ACTIVE',
     `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_lab_code` (`code`),
-    KEY `idx_lab_status` (`status`)
+    KEY `idx_lab_status` (`status`),
+    KEY `idx_lab_college` (`college_id`),
+    CONSTRAINT `fk_lab_college` FOREIGN KEY (`college_id`) REFERENCES `college` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实训室';
 
 CREATE TABLE IF NOT EXISTS `student` (
     `id`         BIGINT      NOT NULL AUTO_INCREMENT,
     `user_id`    BIGINT      NOT NULL,
+    `college_id` BIGINT      NOT NULL,
     `student_no` VARCHAR(32) NOT NULL,
     `name`       VARCHAR(64) NOT NULL,
     `gender`     VARCHAR(8)  NULL,
@@ -63,7 +85,9 @@ CREATE TABLE IF NOT EXISTS `student` (
     UNIQUE KEY `uk_student_no` (`student_no`),
     UNIQUE KEY `uk_student_user` (`user_id`),
     KEY `idx_student_grade` (`grade`),
-    CONSTRAINT `fk_student_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`)
+    KEY `idx_student_college` (`college_id`),
+    CONSTRAINT `fk_student_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`),
+    CONSTRAINT `fk_student_college` FOREIGN KEY (`college_id`) REFERENCES `college` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学生信息';
 
 CREATE TABLE IF NOT EXISTS `mentor` (
@@ -359,58 +383,99 @@ CREATE TABLE IF NOT EXISTS `auth_token` (
     CONSTRAINT `fk_token_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='登录令牌';
 
-
 -- ============================================================
 -- 演示数据（幂等：重复启动不会产生重复记录）
 -- 所有演示账号密码均为 123456
--- 账号：admin / t1001...t3002 / S2023001...S2023014
--- 说明：数据覆盖“填报中 + 已完成”两个批次，便于直接演示完整闭环。
+-- 学院账号：admin / admin_math / admin_phys / admin_voc
+-- 导师账号：t1001...t3002 / t4001...t6002
+-- 学生账号：S2023001...S2023014 / S2024001...S2024006
+-- 说明：信息学院保留完整历史；其余学院提供实验室与演示学生，便于验证学院隔离。
 -- ============================================================
 
+-- ---------- 学院 ----------
+INSERT IGNORE INTO `college` (`id`, `code`, `name`, `intro`, `accent_color`, `sort_order`) VALUES
+(1, 'CS',   '信息科学与技术学院', '覆盖计算机、软件、人工智能、数据科学与数字媒体等方向。', '#C2410C', 1),
+(2, 'MATH', '数学科学学院',       '数学建模、科学计算、优化算法与统计学习。', '#0F766E', 2),
+(3, 'PHYS', '物理与电子科学学院', '光电信息、量子技术、精密测量与电子系统。', '#B45309', 3),
+(4, 'VOC',  '职业技术学院',       '智能制造、机器人、自动化产线与工程训练。', '#475569', 4);
+
 -- ---------- 账号 ----------
-INSERT IGNORE INTO `sys_user` (`id`, `account`, `password_hash`, `display_name`, `role`, `enabled`) VALUES
-(1,  'admin',   'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '学院教务管理员', 'ADMIN', 1),
-(2,  't1001',   'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '张明', 'MENTOR', 1),
-(3,  't1002',   'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '李静', 'MENTOR', 1),
-(4,  't2001',   'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '王强', 'MENTOR', 1),
-(5,  't2002',   'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '赵敏', 'MENTOR', 1),
-(6,  't3001',   'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '陈晨', 'MENTOR', 1),
-(7,  't3002',   'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '刘洋', 'MENTOR', 1),
-(8,  'S2023001', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '林晓', 'STUDENT', 1),
-(9,  'S2023002', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '周子涵', 'STUDENT', 1),
-(10, 'S2023003', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '陈雨桐', 'STUDENT', 1),
-(11, 'S2023004', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '赵一鸣', 'STUDENT', 1),
-(12, 'S2023005', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '孙悦', 'STUDENT', 1),
-(13, 'S2023006', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '吴昊', 'STUDENT', 1),
-(14, 'S2023007', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '郑可', 'STUDENT', 1),
-(15, 'S2023008', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '王思远', 'STUDENT', 1),
-(16, 'S2023009', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '李知遥', 'STUDENT', 1),
-(17, 'S2023010', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '黄子轩', 'STUDENT', 1),
-(18, 'S2023011', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '徐若曦', 'STUDENT', 1),
-(19, 'S2023012', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '马腾', 'STUDENT', 1),
-(20, 'S2023013', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '何佳', 'STUDENT', 1),
-(21, 'S2023014', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '罗宇', 'STUDENT', 1);
+INSERT IGNORE INTO `sys_user` (`id`, `account`, `password_hash`, `display_name`, `role`, `college_id`, `enabled`) VALUES
+(1, 'admin', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '学院教务管理员', 'ADMIN', 1, 1),
+(2, 't1001', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '张明', 'MENTOR', 1, 1),
+(3, 't1002', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '李静', 'MENTOR', 1, 1),
+(4, 't2001', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '王强', 'MENTOR', 1, 1),
+(5, 't2002', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '赵敏', 'MENTOR', 1, 1),
+(6, 't3001', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '陈晨', 'MENTOR', 1, 1),
+(7, 't3002', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '刘洋', 'MENTOR', 1, 1),
+(8, 'S2023001', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '林晓', 'STUDENT', 1, 1),
+(9, 'S2023002', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '周子涵', 'STUDENT', 1, 1),
+(10, 'S2023003', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '陈雨桐', 'STUDENT', 1, 1),
+(11, 'S2023004', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '赵一鸣', 'STUDENT', 1, 1),
+(12, 'S2023005', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '孙悦', 'STUDENT', 1, 1),
+(13, 'S2023006', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '吴昊', 'STUDENT', 1, 1),
+(14, 'S2023007', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '郑可', 'STUDENT', 1, 1),
+(15, 'S2023008', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '王思远', 'STUDENT', 1, 1),
+(16, 'S2023009', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '李知遥', 'STUDENT', 1, 1),
+(17, 'S2023010', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '黄子轩', 'STUDENT', 1, 1),
+(18, 'S2023011', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '徐若曦', 'STUDENT', 1, 1),
+(19, 'S2023012', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '马腾', 'STUDENT', 1, 1),
+(20, 'S2023013', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '何佳', 'STUDENT', 1, 1),
+(21, 'S2023014', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '罗宇', 'STUDENT', 1, 1),
+(22, 't4001', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '周数', 'MENTOR', 2, 1),
+(23, 't4002', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '吴算', 'MENTOR', 2, 1),
+(24, 't5001', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '郑光', 'MENTOR', 3, 1),
+(25, 't5002', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '王量', 'MENTOR', 3, 1),
+(26, 't6001', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '冯智', 'MENTOR', 4, 1),
+(27, 't6002', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '陈造', 'MENTOR', 4, 1),
+(28, 'S2024001', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '赵思远', 'STUDENT', 2, 1),
+(29, 'S2024002', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '钱雨欣', 'STUDENT', 2, 1),
+(30, 'S2024003', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '孙博', 'STUDENT', 3, 1),
+(31, 'S2024004', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '李晨曦', 'STUDENT', 3, 1),
+(32, 'S2024005', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '周航', 'STUDENT', 4, 1),
+(33, 'S2024006', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '吴桐', 'STUDENT', 4, 1),
+(34, 'admin_math', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '数学学院管理员', 'ADMIN', 2, 1),
+(35, 'admin_phys', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '物理学院管理员', 'ADMIN', 3, 1),
+(36, 'admin_voc', 'pbkdf2$120000$bGFiLXNlbGVjdGlvbi1kZW1vLTIwMjY=$wtBvSjvr5AVY+8VqoqGlFiMWXxbmZQWpNpAzEZpgySg=', '职院管理员', 'ADMIN', 4, 1);
 
 -- ---------- 实训室 ----------
-INSERT IGNORE INTO `lab` (`id`, `code`, `name`, `intro`, `direction`, `training_plan`, `requirements`, `contact`, `total_quota`, `status`) VALUES
-(1, 'LAB-AIOT', '智能感知与边缘计算实训室',
+INSERT IGNORE INTO `lab` (`id`, `college_id`, `code`, `name`, `intro`, `direction`, `training_plan`, `requirements`, `contact`, `location`, `cover_image`, `total_quota`, `status`) VALUES
+(1, 1, 'LAB-AIOT', '智能感知与边缘计算实训室',
  '面向工业与校园场景，建设从端侧感知、边缘推理到云端协同的完整实践链条。',
  '边缘智能、嵌入式视觉、工业物联网、智能硬件',
  '采用 AI+PBL 项目制培养。入组后先完成 4 周基础训练，再进入企业真实课题或学科竞赛项目，配备双周一对一指导与阶段答辩。',
  '具备 C/C++ 或 Python 基础；对嵌入式、计算机视觉有持续兴趣；能保证每周不少于 10 小时投入。',
- '王老师 · 信息楼 A301', 6, 'ACTIVE'),
-(2, 'LAB-DATA', '数据智能与知识工程实训室',
+ '王老师 · 信息楼 A301', '信息楼 A301', '/lab-covers/lab-2.jpg', 6, 'ACTIVE'),
+(2, 1, 'LAB-DATA', '数据智能与知识工程实训室',
  '聚焦大模型应用、知识图谱与数据挖掘，强调从数据治理到智能应用的工程化落地。',
  '大模型应用、知识图谱、数据挖掘、推荐系统',
  '以小组为单位参与横向课题，训练数据清洗、特征工程、模型评测与论文复现能力，优秀成员可参与论文与专利工作。',
  '掌握 Python 与至少一种机器学习框架；有数学建模或数据分析经历者优先。',
- '赵老师 · 信息楼 B402', 5, 'ACTIVE'),
-(3, 'LAB-HCI', '人机交互与数字媒体实训室',
+ '赵老师 · 信息楼 B402', '信息楼 B402', '/lab-covers/lab-3.jpg', 5, 'ACTIVE'),
+(3, 1, 'LAB-HCI', '人机交互与数字媒体实训室',
  '关注人与数字世界的交互方式，覆盖交互设计、可视化、VR/AR 与数字内容创作。',
  '交互设计、数据可视化、VR/AR、数字媒体',
  '项目制 + 工作坊培养，从需求洞察、原型设计到可用性测试完整实践，定期组织作品评审与行业分享。',
  '具备设计基础或前端开发能力；提交过交互/可视化作品者优先。',
- '陈老师 · 创意楼 C205', 4, 'ACTIVE');
+ '陈老师 · 创意楼 C205', '创意楼 C205', '/lab-covers/lab-1.jpg', 4, 'ACTIVE'),
+(4, 2, 'LAB-MATH', '数学建模与科学计算实训室',
+ '面向数学建模、科学计算与数据分析，训练从问题抽象、模型构建到数值求解的完整能力。',
+ '数学建模、科学计算、优化算法、统计学习',
+ '以竞赛与科研问题为牵引，开展模型构建、算法实现、结果解释与论文写作训练。',
+ '具备高等数学、线性代数基础；熟悉 Python/MATLAB 中至少一种工具。',
+ '周老师 · 理科楼 D210', '理科楼 D210', '/lab-covers/lab-4.jpg', 4, 'ACTIVE'),
+(5, 3, 'LAB-PHYS', '光电信息与量子技术实训室',
+ '围绕光电信息、量子技术与精密测量，提供从光学实验到量子信息处理的实践平台。',
+ '光电信息、量子光学、精密测量、电子系统',
+ '采用导师课题 + 实验项目制，训练光学系统搭建、信号采集与数据分析能力。',
+ '具备大学物理与电路基础；对光学实验或量子技术有兴趣。',
+ '郑老师 · 物理楼 E108', '物理楼 E108', '/lab-covers/lab-5.jpg', 4, 'ACTIVE'),
+(6, 4, 'LAB-VOC', '智能制造与机器人实训室',
+ '面向智能制造与工业机器人，覆盖自动化产线、机器人编程与数字孪生。',
+ '智能制造、工业机器人、自动化产线、数字孪生',
+ '依托工程训练中心开展项目化教学，完成产线搭建、机器人编程与系统联调。',
+ '具备机械制图、电工电子或 PLC 基础；动手能力强。',
+ '冯老师 · 工程训练中心 F103', '工程训练中心 F103', '/lab-covers/lab-6.jpg', 5, 'ACTIVE');
 
 -- ---------- 导师 ----------
 INSERT IGNORE INTO `mentor` (`id`, `user_id`, `mentor_no`, `name`, `title`, `lab_id`, `research_direction`, `profile`, `quota`, `enabled`) VALUES
@@ -419,24 +484,36 @@ INSERT IGNORE INTO `mentor` (`id`, `user_id`, `mentor_no`, `name`, `title`, `lab
 (3, 4, 'T2001', '王强', '教授', 2, '大模型应用与知识图谱', '承担多项大模型行业应用课题，指导学生在 ACL、KDD 等会议发表论文。', 3, 1),
 (4, 5, 'T2002', '赵敏', '副教授', 2, '数据挖掘与推荐系统', '长期从事数据挖掘与用户行为建模研究，擅长指导学生完成完整数据项目。', 2, 1),
 (5, 6, 'T3001', '陈晨', '讲师', 3, '交互设计与数据可视化', '关注可解释交互与信息可视化，指导作品多次获省级以上奖项。', 2, 1),
-(6, 7, 'T3002', '刘洋', '副教授', 3, 'VR/AR 与数字内容', '研究方向为沉浸式交互与数字内容生成，拥有丰富的产学研合作经验。', 2, 1);
+(6, 7, 'T3002', '刘洋', '副教授', 3, 'VR/AR 与数字内容', '研究方向为沉浸式交互与数字内容生成，拥有丰富的产学研合作经验。', 2, 1),
+(7, 22, 'T4001', '周数', '教授', 4, '数学建模与优化算法', '长期指导数学建模竞赛，关注优化模型与复杂系统仿真。', 2, 1),
+(8, 23, 'T4002', '吴算', '副教授', 4, '科学计算与统计学习', '从事数值计算与统计学习研究，强调从数据到模型的完整训练。', 2, 1),
+(9, 24, 'T5001', '郑光', '教授', 5, '光电信息与量子光学', '主持光电信息与量子光学课题，拥有完整的实验平台与项目经验。', 2, 1),
+(10, 25, 'T5002', '王量', '副教授', 5, '量子信息与精密测量', '研究方向为量子信息处理与精密测量，注重实验与理论结合。', 2, 1),
+(11, 26, 'T6001', '冯智', '高级工程师', 6, '智能制造与工业机器人', '具有多年智能制造产线经验，指导学生完成机器人编程与系统联调。', 3, 1),
+(12, 27, 'T6002', '陈造', '讲师', 6, '自动化产线与数字孪生', '关注自动化产线与数字孪生技术，强调工程实践与安全意识。', 2, 1);
 
 -- ---------- 学生 ----------
-INSERT IGNORE INTO `student` (`id`, `user_id`, `student_no`, `name`, `gender`, `major`, `class_name`, `grade`, `phone`, `email`) VALUES
-(1, 8,  'S2023001', '林晓',   '女', '计算机科学与技术', '计科2301', '2023', '13800000001', 'linxiao@example.edu'),
-(2, 9,  'S2023002', '周子涵', '男', '软件工程', '软工2302', '2023', '13800000002', 'zhouzihan@example.edu'),
-(3, 10, 'S2023003', '陈雨桐', '女', '人工智能', '人工智能2301', '2023', '13800000003', 'chenyutong@example.edu'),
-(4, 11, 'S2023004', '赵一鸣', '男', '计算机科学与技术', '计科2302', '2023', '13800000004', 'zhaoyiming@example.edu'),
-(5, 12, 'S2023005', '孙悦',   '女', '数据科学与大数据技术', '大数据2301', '2023', '13800000005', 'sunyue@example.edu'),
-(6, 13, 'S2023006', '吴昊',   '男', '软件工程', '软工2301', '2023', '13800000006', 'wuhao@example.edu'),
-(7, 14, 'S2023007', '郑可',   '女', '数字媒体技术', '数媒2301', '2023', '13800000007', 'zhengke@example.edu'),
-(8, 15, 'S2023008', '王思远', '男', '人工智能', '人工智能2302', '2023', '13800000008', 'wangsiyuan@example.edu'),
-(9, 16, 'S2023009', '李知遥', '女', '计算机科学与技术', '计科2301', '2023', '13800000009', 'lizhiyao@example.edu'),
-(10, 17, 'S2023010', '黄子轩', '男', '软件工程', '软工2302', '2023', '13800000010', 'huangzixuan@example.edu'),
-(11, 18, 'S2023011', '徐若曦', '女', '数据科学与大数据技术', '大数据2302', '2023', '13800000011', 'xuruoxi@example.edu'),
-(12, 19, 'S2023012', '马腾',   '男', '数字媒体技术', '数媒2302', '2023', '13800000012', 'mateng@example.edu'),
-(13, 20, 'S2023013', '何佳',   '女', '人工智能', '人工智能2301', '2024', '13800000013', 'hejia@example.edu'),
-(14, 21, 'S2023014', '罗宇',   '男', '计算机科学与技术', '计科2302', '2023', '13800000014', 'luoyu@example.edu');
+INSERT IGNORE INTO `student` (`id`, `user_id`, `college_id`, `student_no`, `name`, `gender`, `major`, `class_name`, `grade`, `phone`, `email`) VALUES
+(1, 8, 1, 'S2023001', '林晓', '女', '计算机科学与技术', '计科2301', '2023', '13800000001', 'linxiao@example.edu'),
+(2, 9, 1, 'S2023002', '周子涵', '男', '软件工程', '软工2302', '2023', '13800000002', 'zhouzihan@example.edu'),
+(3, 10, 1, 'S2023003', '陈雨桐', '女', '人工智能', '人工智能2301', '2023', '13800000003', 'chenyutong@example.edu'),
+(4, 11, 1, 'S2023004', '赵一鸣', '男', '计算机科学与技术', '计科2302', '2023', '13800000004', 'zhaoyiming@example.edu'),
+(5, 12, 1, 'S2023005', '孙悦', '女', '数据科学与大数据技术', '大数据2301', '2023', '13800000005', 'sunyue@example.edu'),
+(6, 13, 1, 'S2023006', '吴昊', '男', '软件工程', '软工2301', '2023', '13800000006', 'wuhao@example.edu'),
+(7, 14, 1, 'S2023007', '郑可', '女', '数字媒体技术', '数媒2301', '2023', '13800000007', 'zhengke@example.edu'),
+(8, 15, 1, 'S2023008', '王思远', '男', '人工智能', '人工智能2302', '2023', '13800000008', 'wangsiyuan@example.edu'),
+(9, 16, 1, 'S2023009', '李知遥', '女', '计算机科学与技术', '计科2301', '2023', '13800000009', 'lizhiyao@example.edu'),
+(10, 17, 1, 'S2023010', '黄子轩', '男', '软件工程', '软工2302', '2023', '13800000010', 'huangzixuan@example.edu'),
+(11, 18, 1, 'S2023011', '徐若曦', '女', '数据科学与大数据技术', '大数据2302', '2023', '13800000011', 'xuruoxi@example.edu'),
+(12, 19, 1, 'S2023012', '马腾', '男', '数字媒体技术', '数媒2302', '2023', '13800000012', 'mateng@example.edu'),
+(13, 20, 1, 'S2023013', '何佳', '女', '人工智能', '人工智能2301', '2024', '13800000013', 'hejia@example.edu'),
+(14, 21, 1, 'S2023014', '罗宇', '男', '计算机科学与技术', '计科2302', '2023', '13800000014', 'luoyu@example.edu'),
+(15, 28, 2, 'S2024001', '赵思远', '男', '数学与应用数学', '数学2401', '2024', '13800000015', 'zhaosiyuan@example.edu'),
+(16, 29, 2, 'S2024002', '钱雨欣', '女', '统计学', '统计2401', '2024', '13800000016', 'qianyuxin@example.edu'),
+(17, 30, 3, 'S2024003', '孙博', '男', '物理学', '物理2401', '2024', '13800000017', 'sunbo@example.edu'),
+(18, 31, 3, 'S2024004', '李晨曦', '女', '光电信息科学与工程', '光电2401', '2024', '13800000018', 'lichenxi@example.edu'),
+(19, 32, 4, 'S2024005', '周航', '男', '机械设计制造及其自动化', '机械2401', '2024', '13800000019', 'zhouhang@example.edu'),
+(20, 33, 4, 'S2024006', '吴桐', '女', '电气自动化技术', '电气2401', '2024', '13800000020', 'wutong@example.edu');
 
 -- ---------- 选拔批次 ----------
 INSERT IGNORE INTO `selection_batch`

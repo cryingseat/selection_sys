@@ -78,12 +78,13 @@ async function changeStage() {
   <div v-if="loading" class="card card-pad"><div class="loading-block"><div class="spinner" />正在加载学院总览…</div></div>
 
   <template v-else-if="data">
-    <section class="card card-pad" style="background: linear-gradient(120deg, #f6faff, #fff 55%, #f0f7fd)">
+    <section class="card card-pad" style="background: linear-gradient(120deg, #fcfbf9, #fff 55%, #f7f5f0)">
       <div class="flex flex-wrap" style="justify-content: space-between; gap: 18px">
         <div>
           <div class="flex flex-wrap">
             <span class="pill pill--blue">{{ batch.name }}</span>
             <span class="pill pill--gray">参与年级 {{ batch.gradeScope || '不限' }}</span>
+            <span v-if="data.college" class="pill pill--gray">{{ data.college }}</span>
             <span class="pill pill--gray">共 {{ data.batches?.length || 0 }} 个批次</span>
           </div>
           <h2 class="mt-12">{{ resolveMeta(batchStatus, batch.status).label }}</h2>
@@ -97,8 +98,8 @@ async function changeStage() {
     </section>
 
     <div class="stat-grid">
-      <StatCard label="参与学生" :value="stats.studentCount" hint="学生库总人数" tint="#e8f1fb" />
-      <StatCard label="报名人数" :value="stats.applicationCount" hint="已提交报名" tint="#eaf3fb" />
+      <StatCard label="参与学生" :value="stats.studentCount" hint="学生库总人数" tint="#f2efe9" />
+      <StatCard label="报名人数" :value="stats.applicationCount" hint="已提交报名" tint="#f7f5f0" />
       <StatCard label="待初选" :value="stats.pendingDecisions" hint="导师尚未给出结论" tint="#fff0e6" />
       <StatCard label="最终录取" :value="stats.admittedCount" :hint="`待确认拟录取 ${stats.pendingOffers} 条`" tint="#e7f5f1" />
     </div>

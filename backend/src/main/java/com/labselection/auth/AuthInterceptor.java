@@ -31,8 +31,18 @@ public class AuthInterceptor implements HandlerInterceptor {
         String rawToken = authorization != null && authorization.startsWith("Bearer ")
                 ? authorization.substring(7).trim() : null;
 
+        PublicAccess publicAccess = AnnotatedElementUtils.findMergedAnnotation(
+                handlerMethod.getMethod(), PublicAccess.class);
+        if (publicAccess == null) {
+            publicAccess = AnnotatedElementUtils.findMergedAnnotation(
+                    handlerMethod.getBeanType(), PublicAccess.class);
+        }
+
         CurrentUser currentUser = tokenService.authenticate(rawToken);
         if (currentUser == null) {
+            if (publicAccess != null) {
+                return true;
+            }
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
 

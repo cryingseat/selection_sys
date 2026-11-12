@@ -16,7 +16,7 @@ const saving = ref(false)
 
 const form = reactive({
   name: '', code: '', intro: '', direction: '', trainingPlan: '', requirements: '',
-  contact: '', totalQuota: 4, status: 'ACTIVE'
+  contact: '', location: '', coverImage: '', totalQuota: 4, status: 'ACTIVE'
 })
 
 const totalQuota = computed(() => labs.value.reduce((sum, lab) => sum + (lab.totalQuota || 0), 0))
@@ -37,7 +37,7 @@ onMounted(load)
 
 function openCreate() {
   modal.id = null
-  Object.assign(form, { name: '', code: '', intro: '', direction: '', trainingPlan: '', requirements: '', contact: '', totalQuota: 4, status: 'ACTIVE' })
+  Object.assign(form, { name: '', code: '', intro: '', direction: '', trainingPlan: '', requirements: '', contact: '', location: '', coverImage: '', totalQuota: 4, status: 'ACTIVE' })
   modal.open = true
 }
 
@@ -46,6 +46,7 @@ function openEdit(lab) {
   Object.assign(form, {
     name: lab.name || '', code: lab.code || '', intro: lab.intro || '', direction: lab.direction || '',
     trainingPlan: lab.trainingPlan || '', requirements: lab.requirements || '', contact: lab.contact || '',
+    location: lab.location || '', coverImage: lab.coverImage || '',
     totalQuota: lab.totalQuota ?? 0, status: lab.status || 'ACTIVE'
   })
   modal.open = true
@@ -92,8 +93,8 @@ async function toggle(lab) {
   </PageHeader>
 
   <div class="stat-grid">
-    <StatCard label="实训室" :value="labs.length" :hint="`启用 ${activeCount} 个`" tint="#e8f1fb" />
-    <StatCard label="总名额" :value="totalQuota" hint="全部实训室" tint="#eaf3fb" />
+    <StatCard label="实训室" :value="labs.length" :hint="`启用 ${activeCount} 个`" tint="#f2efe9" />
+    <StatCard label="总名额" :value="totalQuota" hint="全部实训室" tint="#f7f5f0" />
     <StatCard label="导师总数" :value="labs.reduce((sum, lab) => sum + (lab.mentorCount || 0), 0)" hint="各实训室合计" tint="#fff0e6" />
     <StatCard label="已录取" :value="labs.reduce((sum, lab) => sum + (lab.confirmedCount || 0), 0)" hint="当前批次" tint="#e7f5f1" />
   </div>
@@ -103,13 +104,18 @@ async function toggle(lab) {
   <div v-else-if="labs.length" class="stack">
     <article v-for="lab in labs" :key="lab.id" class="card card-pad">
       <div class="flex flex-wrap" style="justify-content: space-between; gap: 14px">
-        <div>
-          <div class="flex">
-            <span class="pill" :class="lab.status === 'ACTIVE' ? 'pill--green' : 'pill--gray'">{{ lab.status === 'ACTIVE' ? '启用中' : '已停用' }}</span>
-            <span class="pill pill--gray">{{ lab.code }}</span>
+        <div class="flex" style="gap: 14px; align-items: flex-start">
+          <img v-if="lab.coverImage" :src="lab.coverImage" :alt="lab.name" style="width: 138px; height: 88px; object-fit: cover; border-radius: 12px; flex: 0 0 auto" />
+          <div>
+            <div class="flex">
+              <span class="pill" :class="lab.status === 'ACTIVE' ? 'pill--green' : 'pill--gray'">{{ lab.status === 'ACTIVE' ? '启用中' : '已停用' }}</span>
+              <span class="pill pill--gray">{{ lab.code }}</span>
+              <span v-if="lab.collegeName" class="pill pill--gray">{{ lab.collegeName }}</span>
+            </div>
+            <h3 class="mt-8">{{ lab.name }}</h3>
+            <p class="small muted mt-4">{{ lab.direction }}</p>
+            <p class="tiny muted mt-4">{{ lab.location || '未设置空间位置' }}</p>
           </div>
-          <h3 class="mt-8">{{ lab.name }}</h3>
-          <p class="small muted mt-4">{{ lab.direction }}</p>
         </div>
         <div class="button-row">
           <button class="btn btn-ghost btn-sm" type="button" @click="toggle(lab)">{{ lab.status === 'ACTIVE' ? '停用' : '启用' }}</button>
@@ -165,6 +171,17 @@ async function toggle(lab) {
       <div class="field span-2">
         <label class="label">选拔要求</label>
         <textarea v-model="form.requirements" class="textarea" />
+      </div>
+      <div class="field">
+        <label class="label">空间位置</label>
+        <input v-model="form.location" class="input" placeholder="例如：信息楼 A301" />
+      </div>
+      <div class="field">
+        <label class="label">封面图</label>
+        <select v-model="form.coverImage" class="select">
+          <option value="">使用默认渐变封面</option>
+          <option v-for="index in 6" :key="index" :value="`/lab-covers/lab-${index}.jpg`">空间实景 {{ index }}</option>
+        </select>
       </div>
       <div class="field span-2">
         <label class="label">联系方式</label>

@@ -1,35 +1,56 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { publicApi } from '../../api'
 import { useAuthStore } from '../../stores/auth'
 import { notify } from '../../composables/useToast'
 import { assignmentSource, batchStatus, publicityStatus, meta as resolveMeta } from '../../utils/labels'
-import { fmt, monthDay, quotaPercent } from '../../utils/format'
+import { fmt, monthDay } from '../../utils/format'
 import Icon from '../../components/Icon.vue'
 import StatusPill from '../../components/StatusPill.vue'
 import ModalDialog from '../../components/ModalDialog.vue'
 import EmptyState from '../../components/EmptyState.vue'
 
 const auth = useAuthStore()
+const router = useRouter()
 const loading = ref(true)
 const error = ref('')
 const home = ref(null)
+const activeCollege = ref(0)
+const keyword = ref('')
+const onlyAvailable = ref(false)
 const activeLab = ref(null)
+const activeMentor = ref(null)
 const activeAnnouncement = ref(null)
 
 const batch = computed(() => home.value?.batch || {})
 const labs = computed(() => home.value?.labs || [])
-const stages = computed(() => home.value?.stages || [])
+const colleges = computed(() => home.value?.colleges || [])
 const announcements = computed(() => home.value?.announcements || [])
 const assignments = computed(() => home.value?.publicAssignments || [])
 const stats = computed(() => home.value?.stats || {})
+const scopedCollegeId = computed(() => home.value?.scopedCollegeId || null)
 const statusMeta = computed(() => resolveMeta(batchStatus, batch.value.status))
+const visibleColleges = computed(() => scopedCollegeId.value
+  ? colleges.value.filter((college) => college.id === scopedCollegeId.value)
+  : colleges.value)
+const filteredLabs = computed(() => {
+  const key = keyword.value.trim().toLowerCase()
+  return labs.value.filter((lab) => {
+    if (activeCollege.value && lab.collegeId !== activeCollege.value) return false
+    if (onlyAvailable.value && !(lab.remainingQuota > 0)) return false
+    if (!key) return true
+    const text = `${lab.name}${lab.code}${lab.direction}${lab.intro}${(lab.mentors || []).map((m) => `${m.name}${m.researchDirection}`).join('')}`.toLowerCase()
+    return text.includes(key)
+  })
+})
 
 async function load() {
   loading.value = true
   error.value = ''
   try {
     home.value = await publicApi.home()
+    if (home.value.scopedCollegeId) activeCollege.value = home.value.scopedCollegeId
   } catch (err) {
     error.value = err.message
     notify(err.message, 'error')
@@ -40,8 +61,57 @@ async function load() {
 
 onMounted(load)
 
+function collegeCount(collegeId) {
+  return labs.value.filter((lab) => lab.collegeId === collegeId).length
+}
+
+function setCollege(id) {
+  activeCollege.value = id
+}
+
+function resetFilters() {
+  activeCollege.value = scopedCollegeId.value || 0
+  keyword.value = ''
+  onlyAvailable.value = false
+}
+
+function shortDate(value) {
+  if (!value) return '待定'
+  const text = String(value)
+  return `${Number(text.slice(5, 7))}月${Number(text.slice(8, 10))}日`
+}
+
+function shortOpenDay() {
+  return `${shortDate(batch.value.openDayStart)}–${shortDate(batch.value.openDayEnd)}`
+}
+
 function ctaRoute() {
   return auth.isLoggedIn ? auth.homePath : '/login'
+}
+
+function mentorAction(mentor, lab) {
+  if (!auth.isLoggedIn) {
+    router.push({ name: 'login' })
+    return
+  }
+  if (auth.role === 'STUDENT') {
+    router.push({ name: 'student-application' })
+    return
+  }
+  activeMentor.value = { mentor, lab }
+}
+
+function openMentor(mentor, lab) {
+  activeMentor.value = { mentor, lab }
+}
+
+function directionTags(lab) {
+  return (lab.direction || '').split(/[、,，]/).filter(Boolean).slice(0, 4)
+}
+
+function tagTint(index) {
+  const colors = ['#f2efe9', '#f4f4f5', '#f7f5f0', '#ede9e2']
+  return colors[index % colors.length]
 }
 </script>
 
@@ -52,8 +122,8 @@ function ctaRoute() {
         <router-link to="/" class="brand" style="padding: 0">
           <span class="brand-mark">选</span>
           <span class="brand-text">
-            <strong>实训室进组选拔系统</strong>
-            <span>Lab Selection</span>
+            <strong>实训室进组选拔</strong>
+            <span>Open Studio</span>
           </span>
         </router-link>
         <div class="public-nav-links">
@@ -63,11 +133,13 @@ function ctaRoute() {
           <a v-if="assignments.length" href="#results">公示结果</a>
         </div>
         <div class="spacer" />
-        <router-link v-if="auth.isLoggedIn" :to="auth.homePath" class="btn btn-primary btn-sm">
-          进入工作台 <Icon name="arrow" :size="14" />
-        </router-link>
-        <router-link v-else to="/login" class="btn btn-primary btn-sm">
-          登录 <Icon name="arrow" :size="14" />
+        <span class="nav-stage-pill">
+          <span class="dot" />
+          {{ statusMeta.label }} · {{ fmt(batch.intentStart, '待定') }}
+        </span>
+        <span v-if="auth.isLoggedIn" class="pill pill--gray">{{ auth.user?.collegeName || '全校' }}</span>
+        <router-link :to="ctaRoute()" class="btn btn-primary btn-sm">
+          {{ auth.isLoggedIn ? '进入工作台' : '登录' }} <Icon name="arrow" :size="14" />
         </router-link>
       </div>
     </nav>
@@ -79,48 +151,137 @@ function ctaRoute() {
       </div>
 
       <template v-if="loading">
-        <div class="hero" style="min-height: 300px">
-          <div class="skeleton" style="height: 22px; width: 210px; background: rgba(255,255,255,0.18)" />
-          <div class="skeleton mt-16" style="height: 46px; width: min(560px, 80%); background: rgba(255,255,255,0.16)" />
-          <div class="skeleton mt-12" style="height: 16px; width: min(430px, 70%); background: rgba(255,255,255,0.12)" />
+        <div class="editorial-head">
+          <div>
+            <p class="kicker">CAMPUS STUDIO DIRECTORY · 2026 AUTUMN</p>
+            <h1>走近真实空间，<br />选择你的同行导师</h1>
+          </div>
+          <div class="skeleton" style="height: 60px; width: 360px" />
+        </div>
+        <div class="studio-grid">
+          <div v-for="i in 2" :key="i" class="studio-card"><div class="skeleton" style="height: 420px" /></div>
         </div>
       </template>
 
       <template v-else-if="home">
-        <section class="hero">
-          <div style="position: relative; z-index: 1">
-            <div class="flex flex-wrap" style="gap: 9px">
-              <span class="hero-badge"><Icon name="calendar" :size="14" /> {{ batch.name }}</span>
-              <span class="hero-badge">{{ statusMeta.label }}</span>
-            </div>
-            <h1 class="mt-16">在真实的项目里<br />找到属于你的方向</h1>
-            <p>{{ batch.description || '学院面向指定年级学生开展实训室、项目组或导师团队进组选拔。' }}</p>
-            <div class="hero-actions">
-              <router-link :to="ctaRoute()" class="btn btn-lg" style="background: #fff; color: var(--primary-dark)">
-                {{ auth.isLoggedIn ? '进入我的工作台' : '登录参与选拔' }}
-                <Icon name="arrow" :size="16" />
-              </router-link>
-              <a href="#process" class="btn btn-ghost btn-lg">查看选拔流程</a>
-            </div>
-            <div class="hero-stats">
-              <div class="hero-stat"><strong>{{ stats.labCount ?? labs.length }}</strong><span>实训室</span></div>
-              <div class="hero-stat"><strong>{{ stats.mentorCount ?? '—' }}</strong><span>导师</span></div>
-              <div class="hero-stat"><strong>{{ stats.totalQuota ?? '—' }}</strong><span>招生名额</span></div>
-              <div class="hero-stat"><strong>{{ stats.admittedCount ?? 0 }}</strong><span>已录取</span></div>
-            </div>
+        <section class="editorial-head">
+          <div>
+            <p class="kicker">CAMPUS STUDIO DIRECTORY · 2026 AUTUMN</p>
+            <h1>走近真实空间，<br />选择你的同行导师</h1>
           </div>
+          <p class="editorial-intro">
+            摒弃冗长履历表。先浏览各学院实训室的真实空间、器物环境与项目方向，再挑选至多
+            <strong>3 位平行意向导师</strong>（不分先后）。<br />
+            <span class="tiny">当前面向 {{ batch.gradeScope || '全校' }} 年级 · {{ batch.name }}</span>
+          </p>
+        </section>
+
+        <section id="labs" class="gallery-toolbar">
+          <div class="filter-pills">
+            <button class="filter-pill" :class="{ active: activeCollege === 0 }" @click="setCollege(0)">
+              全部学院 <span class="count">{{ labs.length }}</span>
+            </button>
+            <button
+              v-for="college in visibleColleges"
+              :key="college.id"
+              class="filter-pill"
+              :class="{ active: activeCollege === college.id }"
+              @click="setCollege(college.id)"
+            >
+              <span class="dot" :style="{ backgroundColor: college.accentColor || '#71717a' }" />
+              {{ college.name }} <span class="count">{{ collegeCount(college.id) }}</span>
+            </button>
+          </div>
+          <div class="gallery-tools">
+            <div class="search-pill">
+              <Icon name="search" :size="14" />
+              <input v-model="keyword" placeholder="搜索实训室、导师或方向标签..." />
+              <button v-if="keyword" class="clear" type="button" @click="keyword = ''">×</button>
+            </div>
+            <button class="filter-pill" :class="{ active: onlyAvailable }" @click="onlyAvailable = !onlyAvailable">仅看有余量</button>
+          </div>
+        </section>
+
+        <div v-if="!filteredLabs.length" class="studio-empty">
+          <EmptyState title="未找到匹配的实训室或导师" desc="请尝试切换学院、清空搜索关键词，或关闭“仅看有余量”。" icon="search">
+            <button class="btn btn-primary btn-sm" type="button" @click="resetFilters">重置全部筛选</button>
+          </EmptyState>
+        </div>
+
+        <section v-else class="studio-grid">
+          <article v-for="lab in filteredLabs" :key="lab.id" class="studio-card">
+            <div class="studio-cover">
+              <img v-if="lab.coverImage" :src="lab.coverImage" :alt="lab.name" />
+              <div v-else class="cover-fallback">{{ lab.code }}</div>
+              <div class="studio-badges">
+                <div class="studio-badges-left">
+                  <span class="badge-light">{{ lab.collegeName }}</span>
+                  <span class="badge-dark">{{ lab.location || lab.contact || '校内实训空间' }}</span>
+                </div>
+                <span class="badge-light">{{ lab.remainingQuota > 0 ? `余 ${lab.remainingQuota}` : '名额已满' }}</span>
+              </div>
+              <div class="studio-title">
+                <div>
+                  <p>{{ lab.code }} · 开放日 {{ shortOpenDay() }}</p>
+                  <h2>{{ lab.name }}</h2>
+                </div>
+                <span class="studio-quota">共招 {{ lab.totalQuota }} 人</span>
+              </div>
+            </div>
+
+            <div class="studio-vibe">
+              <p>“{{ lab.intro }}”</p>
+              <div class="vibe-tags">
+                <span v-for="(tag, index) in directionTags(lab)" :key="tag" :style="{ background: tagTint(index) }">{{ tag }}</span>
+              </div>
+            </div>
+
+            <div class="studio-mentors">
+              <div class="studio-mentors-head">
+                <span>驻室导师（{{ (lab.mentors || []).length }}）· 点击卡片看详情</span>
+                <span>平行意向不设先后</span>
+              </div>
+              <div class="mentor-mini-grid">
+                <div
+                  v-for="mentor in lab.mentors || []"
+                  :key="mentor.id"
+                  class="mentor-mini"
+                  role="button"
+                  tabindex="0"
+                  @click="openMentor(mentor, lab)"
+                  @keyup.enter="openMentor(mentor, lab)"
+                >
+                  <span class="mentor-avatar" :style="{ backgroundColor: lab.collegeAccent || '#3f3f46' }">{{ mentor.name.slice(0, 1) }}</span>
+                  <span class="mentor-mini-body">
+                    <strong>{{ mentor.name }} <span>{{ mentor.title }}</span></strong>
+                    <em>招录 {{ mentor.quota }} 人 · {{ mentor.applicantCount || 0 }} 报</em>
+                    <small>{{ mentor.researchDirection }}</small>
+                  </span>
+                  <span class="mentor-mini-action" @click.stop="mentorAction(mentor, lab)">+ 意向</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="studio-actions">
+              <button class="btn btn-ghost btn-sm" type="button" @click="activeLab = lab">查看实训室详情</button>
+              <router-link :to="ctaRoute()" class="btn btn-soft btn-sm">
+                {{ auth.isLoggedIn && auth.role === 'STUDENT' ? '去填报' : '登录参与' }}
+              </router-link>
+            </div>
+          </article>
         </section>
 
         <section id="process" class="section-block">
           <div class="section-block-head">
             <div>
+              <p class="kicker">SELECTION PROCESS</p>
               <h2>八步走完一次双向选择</h2>
               <p>线上记录流程与结果，线下开展宣讲、开放日与面试。</p>
             </div>
-            <span class="pill pill--blue">{{ statusMeta.label }}</span>
+            <StatusPill :value="batch.status" :map="batchStatus" />
           </div>
           <div class="process-grid">
-            <div v-for="stage in stages" :key="stage.no" class="process-card" :class="stage.state">
+            <div v-for="stage in home.stages" :key="stage.no" class="process-card" :class="stage.state">
               <div class="process-no">STEP {{ String(stage.no).padStart(2, '0') }}</div>
               <div class="process-title">{{ stage.title }}</div>
               <div class="process-desc">{{ stage.desc }}</div>
@@ -129,57 +290,11 @@ function ctaRoute() {
           </div>
         </section>
 
-        <section id="labs" class="section-block">
-          <div class="section-block-head">
-            <div>
-              <h2>实训室与导师</h2>
-              <p>了解研究方向、培养方式与名额，选择真正适合你的团队。</p>
-            </div>
-            <span class="small muted">{{ labs.length }} 个实训室</span>
-          </div>
-          <div class="lab-grid">
-            <article v-for="lab in labs" :key="lab.id" class="card lab-card card-hover">
-              <div class="lab-top">
-                <div>
-                  <div class="lab-name">{{ lab.name }}</div>
-                  <div class="lab-code">{{ lab.code }}</div>
-                </div>
-                <span class="pill" :class="lab.remainingQuota > 0 ? 'pill--green' : 'pill--gray'">
-                  {{ lab.remainingQuota > 0 ? `余 ${lab.remainingQuota}` : '名额已满' }}
-                </span>
-              </div>
-              <div class="lab-desc">{{ lab.direction }}</div>
-              <div class="lab-meta">
-                <span><Icon name="users" :size="13" /> {{ lab.mentorCount }} 位导师</span>
-                <span><Icon name="award" :size="13" /> 总名额 {{ lab.totalQuota }}</span>
-                <span v-if="lab.applicantCount"><Icon name="form" :size="13" /> {{ lab.applicantCount }} 人报名</span>
-              </div>
-              <div>
-                <div class="flex" style="justify-content: space-between; font-size: 11px; color: var(--muted-2)">
-                  <span>名额使用</span><span>{{ lab.confirmedCount || 0 }} / {{ lab.totalQuota }}</span>
-                </div>
-                <div class="quota-bar mt-4">
-                  <span :style="{ width: `${quotaPercent(lab.confirmedCount || 0, lab.totalQuota)}%` }" />
-                </div>
-              </div>
-              <div class="mentor-list">
-                <div v-for="mentor in (lab.mentors || []).slice(0, 3)" :key="mentor.id" class="mentor-row">
-                  <span><span class="name">{{ mentor.name }}</span> <span class="muted tiny">{{ mentor.title }}</span></span>
-                  <span class="tiny muted">{{ mentor.researchDirection }}</span>
-                </div>
-              </div>
-              <button class="btn btn-soft btn-sm btn-block" type="button" @click="activeLab = lab">
-                查看实训室详情 <Icon name="arrow" :size="13" />
-              </button>
-            </article>
-          </div>
-        </section>
-
         <section id="news" class="grid-2">
           <div class="card card-pad">
             <div class="section-head">
               <div class="section-title">通知公告</div>
-              <span class="pill pill--blue">{{ announcements.length }} 条</span>
+              <span class="pill pill--gray">{{ announcements.length }} 条</span>
             </div>
             <div v-if="announcements.length">
               <div v-for="item in announcements" :key="item.id" class="announcement-item" style="cursor: pointer" @click="activeAnnouncement = item">
@@ -213,7 +328,7 @@ function ctaRoute() {
                 <Icon name="clock" :size="16" />
                 <span>逾期未确认视为放弃；放弃与逾期产生的空缺进入补录，按候补顺位依次递补。</span>
               </div>
-              <div class="notice notice--info" style="background: #eaf3fb; border-color: #cfe0f2; color: #14539a">
+              <div class="notice notice--info">
                 <Icon name="shield" :size="16" />
                 <span>调剂仅在学生授权范围内进行，优先实训室内部，其次跨实训室，最后安排谈话安置。</span>
               </div>
@@ -283,13 +398,19 @@ function ctaRoute() {
     </main>
 
     <footer class="public-footer">
-      学生实训室进组选拔系统 · 双向选择 · 分轮录取 · 统筹调剂
+      Open Studio · 学生实训室进组选拔系统
+      <span style="margin: 0 8px">|</span> 全校实训室与导师空间画廊
       <span style="margin: 0 8px">|</span> 数据仅用于教学演示
     </footer>
 
     <ModalDialog :open="Boolean(activeLab)" :title="activeLab?.name || ''" :subtitle="activeLab?.code" wide @close="activeLab = null">
       <div v-if="activeLab" class="stack">
+        <div v-if="activeLab.coverImage" style="border-radius: 18px; overflow: hidden; aspect-ratio: 16/7">
+          <img :src="activeLab.coverImage" :alt="activeLab.name" style="width: 100%; height: 100%; object-fit: cover" />
+        </div>
         <div class="grid-2">
+          <div><div class="label">所属学院</div><p class="small mt-4">{{ activeLab.collegeName }}</p></div>
+          <div><div class="label">空间位置</div><p class="small mt-4">{{ activeLab.location || activeLab.contact || '—' }}</p></div>
           <div><div class="label">研究方向</div><p class="small mt-4">{{ activeLab.direction }}</p></div>
           <div><div class="label">联系方式</div><p class="small mt-4">{{ activeLab.contact || '—' }}</p></div>
         </div>
@@ -309,6 +430,39 @@ function ctaRoute() {
           </div>
         </div>
       </div>
+      <template #footer>
+        <button class="btn btn-ghost" type="button" @click="activeLab = null">关闭</button>
+        <router-link :to="ctaRoute()" class="btn btn-primary">去了解填报</router-link>
+      </template>
+    </ModalDialog>
+
+    <ModalDialog :open="Boolean(activeMentor)" :title="activeMentor?.mentor?.name || ''" :subtitle="activeMentor?.lab?.name" @close="activeMentor = null">
+      <div v-if="activeMentor" class="stack">
+        <div class="flex">
+          <span class="mentor-avatar" style="width: 48px; height: 48px; font-size: 18px" :style="{ backgroundColor: activeMentor.lab.collegeAccent || '#3f3f46' }">
+            {{ activeMentor.mentor.name.slice(0, 1) }}
+          </span>
+          <div>
+            <h3>{{ activeMentor.mentor.name }} <span class="muted small">{{ activeMentor.mentor.title }}</span></h3>
+            <div class="small muted">{{ activeMentor.lab.collegeName }} · {{ activeMentor.lab.name }}</div>
+          </div>
+        </div>
+        <div class="kv">
+          <dt>研究方向</dt><dd>{{ activeMentor.mentor.researchDirection }}</dd>
+          <dt>招生名额</dt><dd>{{ activeMentor.mentor.quota }} 人</dd>
+          <dt>报名热度</dt><dd>{{ activeMentor.mentor.applicantCount || 0 }} 人</dd>
+          <dt>空间位置</dt><dd>{{ activeMentor.lab.location || activeMentor.lab.contact || '—' }}</dd>
+        </div>
+        <p class="small muted">{{ activeMentor.mentor.profile }}</p>
+        <div class="notice notice--info">
+          <Icon name="spark" :size="16" />
+          <span>平行意向不设先后，最多可选择 3 位导师。提交前请确认自己的兴趣方向与投入时间。</span>
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn btn-ghost" type="button" @click="activeMentor = null">关闭</button>
+        <router-link :to="ctaRoute()" class="btn btn-primary">{{ auth.isLoggedIn ? '去填报' : '登录后填报' }}</router-link>
+      </template>
     </ModalDialog>
 
     <ModalDialog :open="Boolean(activeAnnouncement)" :title="activeAnnouncement?.title || ''" :subtitle="fmt(activeAnnouncement?.publishStart)" @close="activeAnnouncement = null">

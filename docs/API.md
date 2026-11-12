@@ -45,6 +45,7 @@ Content-Type: application/json
 | 40024 | 400 | 拟录取记录失效 |
 | 40025 | 400 | 补录轮次未开放 |
 | 40027 | 400 | 账号或密码错误 |
+| 40028 | 400 | 账号不属于所选学院 |
 | 40101 | 401 | 未登录/登录过期 |
 | 40301 | 403 | 无权限 |
 | 40401 | 404 | 数据不存在 |
@@ -56,7 +57,7 @@ Content-Type: application/json
 
 | 方法 | 路径 | 角色 | 说明 |
 | --- | --- | --- | --- |
-| POST | `/auth/login` | 公开 | 登录，返回 token 与用户信息 |
+| POST | `/auth/login` | 公开 | 登录（必须提交 `collegeId`），返回 token 与用户信息 |
 | POST | `/auth/logout` | 登录 | 撤销当前 token |
 | GET | `/auth/me` | 登录 | 获取当前用户信息 |
 
@@ -65,7 +66,8 @@ Content-Type: application/json
 ```json
 {
   "account": "S2023001",
-  "password": "123456"
+  "password": "123456",
+  "collegeId": 1
 }
 ```
 
@@ -79,7 +81,9 @@ Content-Type: application/json
     "account": "S2023001",
     "displayName": "林晓",
     "role": "STUDENT",
-    "profile": { "id": 1, "studentNo": "S2023001", "major": "计算机科学与技术" }
+    "collegeId": 1,
+    "collegeName": "信息科学与技术学院",
+    "profile": { "id": 1, "studentNo": "S2023001", "collegeId": 1, "major": "计算机科学与技术" }
   }
 }
 ```
@@ -88,20 +92,24 @@ Content-Type: application/json
 
 ## 二、公开接口
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/public/home` | 当前批次、8 步流程、实训室与导师、公告、统计、公示 |
-| GET | `/public/labs` | 当前批次实训室列表（含导师与名额统计） |
-| GET | `/public/labs/{id}` | 实训室详情 |
-| GET | `/public/announcements` | 已发布且在展示期内的公告 |
-| GET | `/public/publicity?batchId=` | 已发布/已结束的公示与最终名单 |
-| GET | `/health` | 健康检查 |
+公开接口使用 `@PublicAccess`。不带 token 时按游客返回全部学院数据；带有效 token 时仍会解析当前用户，并按其 `collegeId` 过滤实训室。
+
+| 方法 | 路径 | 角色 | 说明 |
+| --- | --- | --- | --- |
+| GET | `/public/colleges` | 公开 | 学院列表（登录页与筛选项） |
+| GET | `/public/home` | 公开/可选登录 | 首页聚合；登录态只返回本学院实训室 |
+| GET | `/public/labs` | 公开/可选登录 | 实训室列表；登录态只返回本学院 |
+| GET | `/public/labs/{id}` | 公开/可选登录 | 详情；跨学院访问返回 404 |
+| GET | `/public/announcements` | 公开 | 已发布且在展示期内的公告 |
+| GET | `/public/publicity?batchId=` | 公开 | 已发布/已结束的公示与最终名单 |
+| GET | `/health` | 公开 | 健康检查 |
 
 `/public/home` 响应包含：
 
 - `batch`：批次与阶段时间；
 - `stages`：8 步流程及 `done/active/upcoming` 状态；
-- `labs`：实训室、导师、名额、报名数；
+- `labs`：实训室、导师、名额、报名数；登录态仅含本学院；
+- `colleges`：全部学院字典；`scopedCollegeId`：登录态为当前学院，游客为 `null`；
 - `announcements`：公告；
 - `publicity` / `publicAssignments`：仅在公示已发布/结束时返回；
 - `stats`：实训室数、导师数、总名额、已录取数。

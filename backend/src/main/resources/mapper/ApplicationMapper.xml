@@ -9,14 +9,15 @@
     </sql>
 
     <sql id="joinCols">
-        s.student_no, s.name AS student_name, s.major, s.class_name, s.grade, s.phone, s.email,
-        b.name AS batch_name, b.status AS batch_status
+        s.college_id, s.student_no, s.name AS student_name, s.major, s.class_name, s.grade, s.phone, s.email,
+        b.name AS batch_name, b.status AS batch_status, c.name AS college_name
     </sql>
 
     <sql id="fromJoin">
         FROM application a
         JOIN student s ON s.id = a.student_id
         JOIN selection_batch b ON b.id = a.batch_id
+        LEFT JOIN college c ON c.id = s.college_id
     </sql>
 
     <select id="findById" resultType="Application">
@@ -48,6 +49,7 @@
         SELECT <include refid="baseCols"/>, <include refid="joinCols"/>
         <include refid="fromJoin"/>
         WHERE a.batch_id = #{batchId}
+        <if test="collegeId != null">AND s.college_id = #{collegeId}</if>
         ORDER BY a.submitted_at DESC, a.id
     </select>
 
@@ -62,6 +64,7 @@
                      OR s.student_no LIKE CONCAT('%', #{keyword}, '%')
                      OR s.major LIKE CONCAT('%', #{keyword}, '%'))
             </if>
+            <if test="collegeId != null">AND s.college_id = #{collegeId}</if>
         </where>
         ORDER BY a.batch_id DESC, a.submitted_at DESC, a.id
         LIMIT #{limit} OFFSET #{offset}
@@ -78,6 +81,7 @@
                      OR s.student_no LIKE CONCAT('%', #{keyword}, '%')
                      OR s.major LIKE CONCAT('%', #{keyword}, '%'))
             </if>
+            <if test="collegeId != null">AND s.college_id = #{collegeId}</if>
         </where>
     </select>
 
@@ -88,6 +92,7 @@
         WHERE a.batch_id = #{batchId}
           AND a.status IN ('SUBMITTED', 'LOCKED')
           AND fa.id IS NULL
+          <if test="collegeId != null">AND s.college_id = #{collegeId}</if>
         ORDER BY a.id
     </select>
 

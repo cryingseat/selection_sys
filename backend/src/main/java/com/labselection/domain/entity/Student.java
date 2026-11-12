@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public class Student {
     private Long id;
     private Long userId;
+    private Long collegeId;
     private String studentNo;
     private String name;
     private String gender;
@@ -22,4 +23,6 @@ public class Student {
     /** 关联查询字段 */
     private String account;
     private Boolean enabled;
+    private String collegeName;
+    private String collegeCode;
 }

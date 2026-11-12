@@ -12,6 +12,7 @@ public class Application {
     private Long id;
     private Long batchId;
     private Long studentId;
+    private Long collegeId;
     private String intro;
     private String skills;
     private String projectExperience;
@@ -33,6 +34,7 @@ public class Application {
     private String email;
     private String batchName;
     private String batchStatus;
+    private String collegeName;
     private List<ApplicationIntent> intents;
     private List<Long> excludedLabIdList;
 }

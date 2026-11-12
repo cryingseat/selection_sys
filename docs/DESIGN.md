@@ -69,6 +69,9 @@ erDiagram
     SELECTION_BATCH ||--o{ PUBLICITY : "公示"
     SELECTION_BATCH ||--o{ ANNOUNCEMENT : "公告"
     SELECTION_BATCH ||--o{ AUDIT_LOG : "审计"
+    COLLEGE ||--o{ SYS_USER : "归属"
+    COLLEGE ||--o{ LAB : "开设"
+    COLLEGE ||--o{ STUDENT : "培养"
     SYS_USER ||--o{ AUTH_TOKEN : "登录令牌"
 ```
 
@@ -76,10 +79,11 @@ erDiagram
 
 | 表 | 作用 | 关键约束 |
 | --- | --- | --- |
-| `sys_user` | 学生/导师/管理员账号 | `account` 唯一 |
-| `student` | 学号、姓名、专业、班级、年级 | `student_no` 唯一；`user_id` 唯一 |
+| `college` | 学院字典：名称、编码、简介、主题色 | `code` 唯一 |
+| `sys_user` | 学生/导师/管理员账号，绑定所属学院 | `account` 唯一；`college_id` |
+| `student` | 学号、姓名、专业、班级、年级、所属学院 | `student_no` 唯一；`user_id` 唯一；`college_id` |
 | `mentor` | 导师、职称、所属实训室、名额 | `mentor_no` 唯一；`user_id` 唯一 |
-| `lab` | 实训室介绍、方向、培养、总名额 | `code` 唯一 |
+| `lab` | 实训室介绍、方向、培养、总名额、位置、封面、所属学院 | `code` 唯一；`college_id` |
 | `selection_batch` | 批次、阶段、8 个阶段时间 | 一个进行中批次（业务约定） |
 | `application` | 报名表、调剂意愿、拒绝实训室、乐观锁 | `(batch_id, student_id)` 唯一；`version` |
 | `application_intent` | 最多 3 个平行意向 | `(application_id, mentor_id)`、`(application_id, sort_no)` 唯一 |
@@ -257,13 +261,15 @@ sequenceDiagram
 
 ## 8. 前端设计
 
-- `AppShell`：侧边栏 + 顶栏 + 角色导航，移动端自动折叠为横向导航；
+- `AppShell`：暖纸色侧边栏 + 顶栏 + 角色导航，顶栏与侧栏展示所属学院；移动端自动折叠；
 - `router`：路由级角色守卫，未登录跳登录，角色不符跳各自首页；
 - `stores/auth`：Token/用户持久化到 localStorage，401 自动清理并跳登录；
 - `api/client`：统一 `baseURL=/api`、Bearer 注入、业务码/HTTP 错误归一化；
 - 复用组件：`StatusPill`、`StatCard`、`StepFlow`、`MentorPicker`、`ModalDialog`、`EmptyState`、`ToastHost`；
-- 视觉：参考河北师范大学官网的深蓝 + 白色配色，深蓝侧栏 / 导航、浅蓝灰背景、白色卡片与柔和阴影；
-- 所有业务数据来自后端接口，无写死业务数据。
+- 视觉：Open Studio 编辑部画廊风格——暖纸色背景、墨黑文字、衬线大标题、白色 24–28px 圆角卡片、16:9 空间实景封面、黑色胶囊按钮；参考 `open_studio.html`；
+- 所有业务数据来自后端接口，无写死业务数据；
+- 登录页必须选择学院，`/auth/login` 校验账号学院与所选学院一致；
+- 公开页在未登录时返回全部学院，登录后由服务端按 `college_id` 过滤；游客与登录态共用 `@PublicAccess` 可选鉴权。
 
 ## 9. 目录与代码组织
 

@@ -63,7 +63,8 @@ public class AdjustmentService {
 
     public Map<String, Object> workspace() {
         SelectionBatch batch = stageGuard.current();
-        List<Application> unadmitted = applicationMapper.listUnadmitted(batch.getId());
+        Long collegeId = currentCollegeId();
+        List<Application> unadmitted = applicationMapper.listUnadmitted(batch.getId(), collegeId);
         List<Map<String, Object>> rows = new ArrayList<>();
         for (Application application : unadmitted) {
             List<ApplicationIntent> intents = intentMapper.findByStudentAndBatch(
@@ -89,7 +90,8 @@ public class AdjustmentService {
         stageGuard.assertStage(batch, BatchStatus.ADJUSTMENT);
         stageGuard.assertNotLocked(batch.getId());
 
-        List<Application> applications = applicationMapper.listUnadmitted(batch.getId());
+        Long collegeId = currentCollegeId();
+        List<Application> applications = applicationMapper.listUnadmitted(batch.getId(), collegeId);
         List<Map<String, Object>> assigned = new ArrayList<>();
         List<Map<String, Object>> talked = new ArrayList<>();
 
@@ -115,7 +117,7 @@ public class AdjustmentService {
                 if (excluded.contains(labId)) {
                     continue;
                 }
-                Mentor candidate = bestMentor(batch.getId(), labId);
+                Mentor candidate = bestMentor(batch.getId(), collegeId, labId);
                 if (candidate != null) {
                     done = tryAssign(application, batch, candidate, AssignmentSource.INTERNAL_ADJUST,
                             "第一优先级：实训室内部调剂");
@@ -131,12 +133,12 @@ public class AdjustmentService {
 
             // 第二优先级：跨实训室调剂（须学生明确授权）
             if (application.getAdjustmentPreference() == AdjustmentPreference.CROSS) {
-                List<Lab> labs = labMapper.findActive();
+                List<Lab> labs = labMapper.findActive(collegeId);
                 for (Lab lab : labs) {
                     if (excluded.contains(lab.getId())) {
                         continue;
                     }
-                    Mentor candidate = bestMentor(batch.getId(), lab.getId());
+                    Mentor candidate = bestMentor(batch.getId(), collegeId, lab.getId());
                     if (candidate != null) {
                         done = tryAssign(application, batch, candidate, AssignmentSource.CROSS_ADJUST,
                                 "第二优先级：跨实训室调剂");
@@ -180,6 +182,9 @@ public class AdjustmentService {
         Mentor mentor = mentorMapper.findById(toMentorId);
         if (mentor == null || !Boolean.TRUE.equals(mentor.getEnabled())) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "目标导师不存在或已停用");
+        }
+        if (!Objects.equals(mentor.getCollegeId(), currentCollegeId())) {
+            throw new BusinessException(ErrorCode.ADJUST_NOT_ALLOWED, "只能调剂到本学院的导师");
         }
         Lab lab = labMapper.findById(mentor.getLabId());
         if (lab == null || lab.getStatus() != LabStatus.ACTIVE) {
@@ -301,8 +306,8 @@ public class AdjustmentService {
         adjustmentMapper.insert(record);
     }
 
-    private Mentor bestMentor(Long batchId, Long labId) {
-        List<Mentor> mentors = mentorMapper.listWithStats(batchId, labId);
+    private Mentor bestMentor(Long batchId, Long collegeId, Long labId) {
+        List<Mentor> mentors = mentorMapper.listWithStats(batchId, collegeId, labId);
         Lab lab = labMapper.findById(labId);
         if (lab == null || lab.getStatus() != LabStatus.ACTIVE) {
             return null;
@@ -341,5 +346,13 @@ public class AdjustmentService {
         row.put("studentName", application.getStudentName());
         row.put("reason", reason);
         return row;
+    }
+
+    private Long currentCollegeId() {
+        Long collegeId = AuthContext.get().collegeId();
+        if (collegeId == null) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "当前账号未绑定学院");
+        }
+        return collegeId;
     }
 }

@@ -40,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -66,24 +67,32 @@ public class AdminService {
 
     public Map<String, Object> dashboard() {
         SelectionBatch batch = stageGuard.current();
-        List<Lab> labs = labMapper.listWithStats(batch.getId());
-        List<Mentor> mentors = mentorMapper.listWithStats(batch.getId(), null);
-        long applications = applicationMapper.countSubmittedByBatch(batch.getId());
-        long offers = offerMapper.countByBatch(batch.getId(), OfferStatus.OFFERED.name());
-        long admitted = assignmentMapper.countByBatch(batch.getId());
-        long pending = mentors.stream()
-                .mapToLong(m -> intentMapper.countPendingByMentor(m.getId(), batch.getId())).sum();
-        long waitlist = intentMapper.findByBatch(batch.getId()).stream()
-                .filter(i -> i.getStatus() == com.labselection.domain.enums.IntentStatus.WAITLISTED).count();
+        Long collegeId = currentCollegeId();
+        List<Lab> labs = labMapper.listWithStats(batch.getId(), collegeId);
+        List<Mentor> mentors = mentorMapper.listWithStats(batch.getId(), collegeId, null);
+        Set<Long> labIds = labs.stream().map(Lab::getId).collect(java.util.stream.Collectors.toSet());
+        List<Offer> allOffers = offerMapper.findByBatch(batch.getId(), null).stream()
+                .filter(offer -> labIds.contains(offer.getLabId())).toList();
+        List<FinalAssignment> allAssignments = assignmentMapper.findByBatch(batch.getId()).stream()
+                .filter(item -> labIds.contains(item.getLabId())).toList();
+        List<ApplicationIntent> intents = intentMapper.findByBatch(batch.getId()).stream()
+                .filter(intent -> labIds.contains(intent.getLabId())).toList();
+        long applications = applicationMapper.countSearch(batch.getId(), "SUBMITTED", null, collegeId)
+                + applicationMapper.countSearch(batch.getId(), "LOCKED", null, collegeId);
+        long offers = allOffers.stream().filter(o -> o.getStatus() == OfferStatus.OFFERED).count();
+        long admitted = allAssignments.size();
+        long pending = intents.stream().filter(i -> i.getStatus() == com.labselection.domain.enums.IntentStatus.PENDING).count();
+        long waitlist = intents.stream().filter(i -> i.getStatus() == com.labselection.domain.enums.IntentStatus.WAITLISTED).count();
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("batch", batch);
         result.put("stages", publicService.stages(batch));
         result.put("batches", batches());
+        result.put("college", currentCollegeName());
         result.put("stats", Map.of(
-                "studentCount", studentMapper.count(),
-                "mentorCount", mentorMapper.count(),
-                "labCount", labMapper.count(),
+                "studentCount", studentMapper.countByCollege(collegeId),
+                "mentorCount", mentors.size(),
+                "labCount", labs.size(),
                 "applicationCount", applications,
                 "pendingOffers", offers,
                 "admittedCount", admitted,
@@ -103,32 +112,47 @@ public class AdminService {
     }
 
     public List<SelectionBatch> batches() {
+        Long collegeId = currentCollegeId();
         List<SelectionBatch> batches = batchMapper.findAll();
         for (SelectionBatch batch : batches) {
-            batch.setApplicationCount((int) applicationMapper.countByBatch(batch.getId()));
-            batch.setOfferCount((int) offerMapper.countByBatch(batch.getId(), null));
-            batch.setAdmittedCount((int) assignmentMapper.countByBatch(batch.getId()));
-            batch.setLabCount((int) labMapper.count());
-            batch.setMentorCount((int) mentorMapper.count());
+            List<Lab> labs = labMapper.listWithStats(batch.getId(), collegeId);
+            Set<Long> labIds = labs.stream().map(Lab::getId).collect(java.util.stream.Collectors.toSet());
+            batch.setApplicationCount((int) (applicationMapper.countSearch(batch.getId(), "SUBMITTED", null, collegeId)
+                    + applicationMapper.countSearch(batch.getId(), "LOCKED", null, collegeId)));
+            batch.setOfferCount((int) offerMapper.findByBatch(batch.getId(), null).stream()
+                    .filter(offer -> labIds.contains(offer.getLabId())).count());
+            batch.setAdmittedCount((int) assignmentMapper.findByBatch(batch.getId()).stream()
+                    .filter(item -> labIds.contains(item.getLabId())).count());
+            batch.setLabCount(labs.size());
+            batch.setMentorCount((int) mentorMapper.listWithStats(batch.getId(), collegeId, null).size());
         }
         return batches;
     }
 
     public Map<String, Object> batchDetail(Long id) {
         SelectionBatch batch = stageGuard.require(id);
-        batch.setApplicationCount((int) applicationMapper.countByBatch(id));
-        batch.setOfferCount((int) offerMapper.countByBatch(id, null));
-        batch.setAdmittedCount((int) assignmentMapper.countByBatch(id));
+        Long collegeId = currentCollegeId();
+        List<Lab> labs = labMapper.listWithStats(id, collegeId);
+        List<Mentor> mentors = mentorMapper.listWithStats(id, collegeId, null);
+        Set<Long> labIds = labs.stream().map(Lab::getId).collect(java.util.stream.Collectors.toSet());
+        batch.setApplicationCount((int) (applicationMapper.countSearch(id, "SUBMITTED", null, collegeId)
+                + applicationMapper.countSearch(id, "LOCKED", null, collegeId)));
+        batch.setOfferCount((int) offerMapper.findByBatch(id, null).stream()
+                .filter(offer -> labIds.contains(offer.getLabId())).count());
+        batch.setAdmittedCount((int) assignmentMapper.findByBatch(id).stream()
+                .filter(item -> labIds.contains(item.getLabId())).count());
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("batch", batch);
         result.put("stages", publicService.stages(batch));
-        result.put("labs", labMapper.listWithStats(id));
-        result.put("mentors", mentorMapper.listWithStats(id, null));
+        result.put("labs", labs);
+        result.put("mentors", mentors);
         result.put("rounds", supplementService.rounds(id));
         result.put("publicities", publicityMapper.findByBatch(id));
-        result.put("applications", applicationMapper.findByBatchWithStudent(id));
-        result.put("offers", offerMapper.findByBatch(id, null));
-        result.put("assignments", assignmentMapper.findByBatch(id));
+        result.put("applications", applicationMapper.findByBatchWithStudent(id, collegeId));
+        result.put("offers", offerMapper.findByBatch(id, null).stream()
+                .filter(offer -> labIds.contains(offer.getLabId())).toList());
+        result.put("assignments", assignmentMapper.findByBatch(id).stream()
+                .filter(item -> labIds.contains(item.getLabId())).toList());
         result.put("review", review(id));
         return result;
     }
@@ -216,9 +240,11 @@ public class AdminService {
 
     public Map<String, Object> review(Long batchId) {
         SelectionBatch batch = stageGuard.require(batchId);
+        Long collegeId = currentCollegeId();
         List<Map<String, Object>> issues = new ArrayList<>();
-        List<Lab> labs = labMapper.listWithStats(batchId);
-        List<Mentor> mentors = mentorMapper.listWithStats(batchId, null);
+        List<Lab> labs = labMapper.listWithStats(batchId, collegeId);
+        List<Mentor> mentors = mentorMapper.listWithStats(batchId, collegeId, null);
+        Set<Long> labIds = labs.stream().map(Lab::getId).collect(java.util.stream.Collectors.toSet());
         for (Lab lab : labs) {
             long used = Math.max(offerMapper.countActiveByLab(lab.getId(), batchId),
                     assignmentMapper.countByLab(lab.getId(), batchId));
@@ -244,7 +270,8 @@ public class AdminService {
             }
         }
 
-        List<Offer> offers = offerMapper.findByBatch(batchId, null);
+        List<Offer> offers = offerMapper.findByBatch(batchId, null).stream()
+                .filter(offer -> labIds.contains(offer.getLabId())).toList();
         int offerWithoutInterview = 0;
         for (Offer offer : offers) {
             if (offer.getStatus() != OfferStatus.OFFERED && offer.getStatus() != OfferStatus.CONFIRMED) {
@@ -271,7 +298,8 @@ public class AdminService {
             issues.add(issue("INFO", "MULTI_OFFER",
                     multiOfferStudents + " 名学生收到多个拟录取意向，等待其自主确认", "BATCH", batchId));
         }
-        long admitted = assignmentMapper.countByBatch(batchId);
+        long admitted = assignmentMapper.findByBatch(batchId).stream()
+                .filter(item -> labIds.contains(item.getLabId())).count();
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("batch", batch);
         summary.put("issueCount", issues.size());
@@ -308,12 +336,12 @@ public class AdminService {
         int safePage = Math.max(1, page);
         int safeSize = Math.min(50, Math.max(1, size));
         List<Application> records = applicationMapper.search(batch.getId(), status, keyword,
-                (safePage - 1) * safeSize, safeSize);
+                currentCollegeId(), (safePage - 1) * safeSize, safeSize);
         for (Application application : records) {
             application.setIntents(intentMapper.findByApplicationId(application.getId()));
             application.setExcludedLabIdList(com.labselection.util.CsvUtils.parseIds(application.getExcludedLabIds()));
         }
-        long total = applicationMapper.countSearch(batch.getId(), status, keyword);
+        long total = applicationMapper.countSearch(batch.getId(), status, keyword, currentCollegeId());
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("batch", batch);
         result.put("records", records);
@@ -328,6 +356,9 @@ public class AdminService {
         if (application == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "报名记录不存在");
         }
+        if (!Objects.equals(application.getCollegeId(), currentCollegeId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "不能查看其他学院的报名");
+        }
         application.setIntents(intentMapper.findByApplicationId(id));
         application.setExcludedLabIdList(com.labselection.util.CsvUtils.parseIds(application.getExcludedLabIds()));
         Map<String, Object> result = new LinkedHashMap<>();
@@ -341,11 +372,17 @@ public class AdminService {
 
     public Map<String, Object> offers(Long batchId) {
         SelectionBatch batch = batchId == null ? stageGuard.current() : stageGuard.require(batchId);
+        Long collegeId = currentCollegeId();
+        Set<Long> labIds = labMapper.listWithStats(batch.getId(), collegeId).stream()
+                .map(Lab::getId).collect(java.util.stream.Collectors.toSet());
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("batch", batch);
-        result.put("offers", offerMapper.findByBatch(batch.getId(), null));
-        result.put("assignments", assignmentMapper.findByBatch(batch.getId()));
-        result.put("interviews", interviewMapper.findByBatch(batch.getId()));
+        result.put("offers", offerMapper.findByBatch(batch.getId(), null).stream()
+                .filter(offer -> labIds.contains(offer.getLabId())).toList());
+        result.put("assignments", assignmentMapper.findByBatch(batch.getId()).stream()
+                .filter(item -> labIds.contains(item.getLabId())).toList());
+        result.put("interviews", interviewMapper.findByBatch(batch.getId()).stream()
+                .filter(item -> labIds.contains(item.getLabId())).toList());
         return result;
     }
 
@@ -358,6 +395,18 @@ public class AdminService {
                 "DRAFT", "ANNOUNCED", "INTENT_OPEN", "INTENT_CLOSED", "INTERVIEW",
                 "CONFIRM", "SUPPLEMENT", "ADJUSTMENT", "PUBLICITY", "FINISHED"));
         return result;
+    }
+
+    private Long currentCollegeId() {
+        Long collegeId = AuthContext.get().collegeId();
+        if (collegeId == null) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "当前账号未绑定学院");
+        }
+        return collegeId;
+    }
+
+    private String currentCollegeName() {
+        return AuthContext.get().collegeName();
     }
 
     private void validateBatch(SelectionBatch request) {

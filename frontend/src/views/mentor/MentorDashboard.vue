@@ -51,10 +51,10 @@ onMounted(load)
   <div v-if="loading" class="card card-pad"><div class="loading-block"><div class="spinner" />正在加载工作台…</div></div>
 
   <template v-else-if="data">
-    <section class="card card-pad" style="background: linear-gradient(120deg, #f6faff, #fff 60%, #f0f7fd)">
+    <section class="card card-pad" style="background: linear-gradient(120deg, #fcfbf9, #fff 60%, #f7f5f0)">
       <div class="flex flex-wrap" style="justify-content: space-between; gap: 18px">
         <div>
-          <div class="flex"><span class="pill pill--violet">{{ lab.name }}</span><span class="pill pill--gray">{{ mentor.title }}</span></div>
+          <div class="flex"><span class="pill pill--violet">{{ lab.name }}</span><span class="pill pill--gray">{{ mentor.title }}</span><span v-if="mentor.collegeName" class="pill pill--gray">{{ mentor.collegeName }}</span></div>
           <h2 class="mt-12">{{ mentor.name }} 老师，{{ resolveMeta(batchStatus, batch.status).label }}</h2>
           <p class="muted small mt-4">{{ mentor.researchDirection }} · 招生名额 {{ mentor.quota }} 人 · 已用 {{ used }} 人</p>
         </div>
@@ -69,9 +69,9 @@ onMounted(load)
     </section>
 
     <div class="stat-grid">
-      <StatCard label="报名学生" :value="stats.applicantCount" hint="报名你的学生数" tint="#e8f1fb" />
+      <StatCard label="报名学生" :value="stats.applicantCount" hint="报名你的学生数" tint="#f2efe9" />
       <StatCard label="待处理意向" :value="stats.pendingCount" hint="需要给出初选结论" tint="#fff0e6" />
-      <StatCard label="已完成面试" :value="stats.interviewCount" hint="本实训室统一面试" tint="#eaf3fb" />
+      <StatCard label="已完成面试" :value="stats.interviewCount" hint="本实训室统一面试" tint="#f7f5f0" />
       <StatCard label="候补 / 拟录取" :value="`${stats.waitlistCount} / ${stats.offerCount}`" hint="拟录取待学生确认" tint="#e7f5f1" />
     </div>
 

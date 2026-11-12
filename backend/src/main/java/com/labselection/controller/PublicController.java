@@ -1,7 +1,9 @@
 package com.labselection.controller;
 
+import com.labselection.auth.PublicAccess;
 import com.labselection.common.ApiResponse;
 import com.labselection.domain.entity.Announcement;
+import com.labselection.domain.entity.College;
 import com.labselection.domain.entity.Lab;
 import com.labselection.service.PublicService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
+@PublicAccess
 @RestController
 @RequestMapping("/api/public")
 @RequiredArgsConstructor
@@ -24,6 +27,11 @@ public class PublicController {
     @GetMapping("/home")
     public ApiResponse<Map<String, Object>> home() {
         return ApiResponse.ok(publicService.home());
+    }
+
+    @GetMapping("/colleges")
+    public ApiResponse<List<College>> colleges() {
+        return ApiResponse.ok(publicService.colleges());
     }
 
     @GetMapping("/labs")

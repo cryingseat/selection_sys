@@ -5,22 +5,39 @@
 --       关键唯一约束用于兜底“一人一组、最多三个意向”等规则。
 -- ============================================================
 
+CREATE TABLE IF NOT EXISTS `college` (
+    `id`           BIGINT       NOT NULL AUTO_INCREMENT,
+    `code`         VARCHAR(32)  NOT NULL,
+    `name`         VARCHAR(128) NOT NULL,
+    `intro`        VARCHAR(500) NULL,
+    `accent_color` VARCHAR(16)  NULL COMMENT '学院主题色，用于筛选圆点',
+    `sort_order`   INT          NOT NULL DEFAULT 0,
+    `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_college_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学院';
+
 CREATE TABLE IF NOT EXISTS `sys_user` (
     `id`            BIGINT       NOT NULL AUTO_INCREMENT,
     `account`       VARCHAR(64)  NOT NULL COMMENT '登录账号：学号/工号/admin',
     `password_hash` VARCHAR(255) NOT NULL COMMENT 'PBKDF2-SHA256 加盐摘要',
     `display_name`  VARCHAR(64)  NOT NULL COMMENT '显示姓名',
     `role`          VARCHAR(20)  NOT NULL COMMENT 'STUDENT/MENTOR/ADMIN',
+    `college_id`    BIGINT       NULL COMMENT '所属学院；登录时必须与所选学院一致',
     `enabled`       TINYINT(1)   NOT NULL DEFAULT 1,
     `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_user_account` (`account`),
-    KEY `idx_user_role` (`role`)
+    KEY `idx_user_role` (`role`),
+    KEY `idx_user_college` (`college_id`),
+    CONSTRAINT `fk_user_college` FOREIGN KEY (`college_id`) REFERENCES `college` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统账号';
 
 CREATE TABLE IF NOT EXISTS `lab` (
     `id`             BIGINT       NOT NULL AUTO_INCREMENT,
+    `college_id`     BIGINT       NOT NULL,
     `code`           VARCHAR(32)  NOT NULL,
     `name`           VARCHAR(128) NOT NULL,
     `intro`          TEXT         NULL,
@@ -28,18 +45,23 @@ CREATE TABLE IF NOT EXISTS `lab` (
     `training_plan`  TEXT         NULL COMMENT '培养内容与方式',
     `requirements`   TEXT         NULL COMMENT '选拔要求',
     `contact`        VARCHAR(128) NULL,
+    `location`       VARCHAR(128) NULL COMMENT '实训室位置',
+    `cover_image`    VARCHAR(255) NULL COMMENT '空间封面图',
     `total_quota`    INT          NOT NULL DEFAULT 0,
     `status`         VARCHAR(16)  NOT NULL DEFAULT 'ACTIVE',
     `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_lab_code` (`code`),
-    KEY `idx_lab_status` (`status`)
+    KEY `idx_lab_status` (`status`),
+    KEY `idx_lab_college` (`college_id`),
+    CONSTRAINT `fk_lab_college` FOREIGN KEY (`college_id`) REFERENCES `college` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实训室';
 
 CREATE TABLE IF NOT EXISTS `student` (
     `id`         BIGINT      NOT NULL AUTO_INCREMENT,
     `user_id`    BIGINT      NOT NULL,
+    `college_id` BIGINT      NOT NULL,
     `student_no` VARCHAR(32) NOT NULL,
     `name`       VARCHAR(64) NOT NULL,
     `gender`     VARCHAR(8)  NULL,
@@ -54,7 +76,9 @@ CREATE TABLE IF NOT EXISTS `student` (
     UNIQUE KEY `uk_student_no` (`student_no`),
     UNIQUE KEY `uk_student_user` (`user_id`),
     KEY `idx_student_grade` (`grade`),
-    CONSTRAINT `fk_student_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`)
+    KEY `idx_student_college` (`college_id`),
+    CONSTRAINT `fk_student_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`),
+    CONSTRAINT `fk_student_college` FOREIGN KEY (`college_id`) REFERENCES `college` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学生信息';
 
 CREATE TABLE IF NOT EXISTS `mentor` (

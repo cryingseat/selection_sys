@@ -157,6 +157,10 @@ public class StudentService {
                 throw new BusinessException(ErrorCode.PARAM_ERROR,
                         "导师「" + mentor.getName() + "」所属实训室已停用");
             }
+            if (!Objects.equals(lab.getCollegeId(), student.getCollegeId())) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR,
+                        "只能选择本学院实训室的导师");
+            }
             if (excludedLabIds.contains(mentor.getLabId())) {
                 throw new BusinessException(ErrorCode.PARAM_ERROR,
                         "不能选择已明确拒绝调剂的实训室下的导师");
@@ -358,6 +362,10 @@ public class StudentService {
             Mentor mentor = mentorMapper.findById(mentorId);
             if (mentor == null || !Boolean.TRUE.equals(mentor.getEnabled())) {
                 throw new BusinessException(ErrorCode.PARAM_ERROR, "所选导师不存在或已停用");
+            }
+            Lab lab = labMapper.findById(mentor.getLabId());
+            if (lab == null || !Objects.equals(lab.getCollegeId(), student.getCollegeId())) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "只能选择本学院实训室的导师");
             }
         }
 

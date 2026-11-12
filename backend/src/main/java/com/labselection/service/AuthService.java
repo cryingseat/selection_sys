@@ -6,12 +6,14 @@ import com.labselection.auth.PasswordService;
 import com.labselection.auth.TokenService;
 import com.labselection.common.BusinessException;
 import com.labselection.common.ErrorCode;
+import com.labselection.domain.entity.College;
 import com.labselection.domain.entity.Mentor;
 import com.labselection.domain.entity.Student;
 import com.labselection.domain.entity.SysUser;
 import com.labselection.dto.LoginRequest;
 import com.labselection.dto.LoginResponse;
 import com.labselection.dto.UserInfo;
+import com.labselection.mapper.CollegeMapper;
 import com.labselection.mapper.MentorMapper;
 import com.labselection.mapper.StudentMapper;
 import com.labselection.mapper.UserMapper;
@@ -25,6 +27,7 @@ public class AuthService {
     private final UserMapper userMapper;
     private final StudentMapper studentMapper;
     private final MentorMapper mentorMapper;
+    private final CollegeMapper collegeMapper;
     private final PasswordService passwordService;
     private final TokenService tokenService;
     private final AuditService auditService;
@@ -36,6 +39,13 @@ public class AuthService {
         }
         if (!Boolean.TRUE.equals(user.getEnabled())) {
             throw new BusinessException(ErrorCode.ACCOUNT_DISABLED);
+        }
+        College college = collegeMapper.findById(request.collegeId());
+        if (college == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "所选学院不存在");
+        }
+        if (user.getCollegeId() == null || !user.getCollegeId().equals(college.getId())) {
+            throw new BusinessException(ErrorCode.COLLEGE_MISMATCH);
         }
         String token = tokenService.createToken(user);
         UserInfo info = buildUserInfo(user);
@@ -68,6 +78,8 @@ public class AuthService {
                 profile = mentor;
             }
         }
-        return new UserInfo(user.getId(), user.getAccount(), user.getDisplayName(), user.getRole(), profile);
+        College college = user.getCollegeId() == null ? null : collegeMapper.findById(user.getCollegeId());
+        return new UserInfo(user.getId(), user.getAccount(), user.getDisplayName(), user.getRole(),
+                user.getCollegeId(), college == null ? null : college.getName(), profile);
     }
 }

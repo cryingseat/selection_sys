@@ -3,28 +3,43 @@
 <mapper namespace="com.labselection.mapper.LabMapper">
 
     <sql id="baseCols">
-        l.id, l.code, l.name, l.intro, l.direction, l.training_plan, l.requirements,
-        l.contact, l.total_quota, l.status, l.created_at, l.updated_at
+        l.id, l.college_id, l.code, l.name, l.intro, l.direction, l.training_plan, l.requirements,
+        l.contact, l.location, l.cover_image, l.total_quota, l.status, l.created_at, l.updated_at
+    </sql>
+
+    <sql id="collegeCols">
+        c.name AS college_name, c.code AS college_code, c.accent_color AS college_accent
     </sql>
 
     <select id="findById" resultType="Lab">
-        SELECT <include refid="baseCols"/> FROM lab l WHERE l.id = #{id}
+        SELECT <include refid="baseCols"/>, <include refid="collegeCols"/>
+        FROM lab l LEFT JOIN college c ON c.id = l.college_id
+        WHERE l.id = #{id}
     </select>
 
     <select id="findByCode" resultType="Lab">
-        SELECT <include refid="baseCols"/> FROM lab l WHERE l.code = #{code}
+        SELECT <include refid="baseCols"/>, <include refid="collegeCols"/>
+        FROM lab l LEFT JOIN college c ON c.id = l.college_id
+        WHERE l.code = #{code}
     </select>
 
     <select id="findAll" resultType="Lab">
-        SELECT <include refid="baseCols"/> FROM lab l ORDER BY l.id
+        SELECT <include refid="baseCols"/>, <include refid="collegeCols"/>
+        FROM lab l LEFT JOIN college c ON c.id = l.college_id
+        ORDER BY l.college_id, l.id
     </select>
 
     <select id="findActive" resultType="Lab">
-        SELECT <include refid="baseCols"/> FROM lab l WHERE l.status = 'ACTIVE' ORDER BY l.id
+        SELECT <include refid="baseCols"/>, <include refid="collegeCols"/>
+        FROM lab l LEFT JOIN college c ON c.id = l.college_id
+        WHERE l.status = 'ACTIVE'
+        <if test="collegeId != null">AND l.college_id = #{collegeId}</if>
+        ORDER BY l.college_id, l.id
     </select>
 
     <select id="search" resultType="Lab">
-        SELECT <include refid="baseCols"/> FROM lab l
+        SELECT <include refid="baseCols"/>, <include refid="collegeCols"/>
+        FROM lab l LEFT JOIN college c ON c.id = l.college_id
         <where>
             <if test="keyword != null and keyword != ''">
                 AND (l.name LIKE CONCAT('%', #{keyword}, '%')
@@ -32,8 +47,9 @@
                      OR l.direction LIKE CONCAT('%', #{keyword}, '%'))
             </if>
             <if test="status != null and status != ''">AND l.status = #{status}</if>
+            <if test="collegeId != null">AND l.college_id = #{collegeId}</if>
         </where>
-        ORDER BY l.id
+        ORDER BY l.college_id, l.id
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
@@ -46,11 +62,12 @@
                      OR l.direction LIKE CONCAT('%', #{keyword}, '%'))
             </if>
             <if test="status != null and status != ''">AND l.status = #{status}</if>
+            <if test="collegeId != null">AND l.college_id = #{collegeId}</if>
         </where>
     </select>
 
     <select id="listWithStats" resultType="Lab">
-        SELECT <include refid="baseCols"/>,
+        SELECT <include refid="baseCols"/>, <include refid="collegeCols"/>,
                (SELECT COUNT(*) FROM mentor m WHERE m.lab_id = l.id AND m.enabled = 1) AS mentor_count,
                (SELECT COUNT(DISTINCT i.application_id) FROM application_intent i
                  WHERE i.batch_id = #{batchId}
@@ -61,20 +78,26 @@
                (l.total_quota - (SELECT COUNT(*) FROM final_assignment fa2
                  WHERE fa2.batch_id = #{batchId} AND fa2.lab_id = l.id
                    AND fa2.status != 'REVOKED')) AS remaining_quota
-        FROM lab l
-        ORDER BY l.id
+        FROM lab l LEFT JOIN college c ON c.id = l.college_id
+        <where>
+            <if test="collegeId != null">AND l.college_id = #{collegeId}</if>
+        </where>
+        ORDER BY l.college_id, l.id
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO lab (code, name, intro, direction, training_plan, requirements, contact, total_quota, status)
-        VALUES (#{code}, #{name}, #{intro}, #{direction}, #{trainingPlan}, #{requirements}, #{contact}, #{totalQuota}, #{status})
+        INSERT INTO lab (college_id, code, name, intro, direction, training_plan, requirements,
+                         contact, location, cover_image, total_quota, status)
+        VALUES (#{collegeId}, #{code}, #{name}, #{intro}, #{direction}, #{trainingPlan}, #{requirements},
+                #{contact}, #{location}, #{coverImage}, #{totalQuota}, #{status})
     </insert>
 
     <update id="update">
         UPDATE lab
-        SET code = #{code}, name = #{name}, intro = #{intro}, direction = #{direction},
-            training_plan = #{trainingPlan}, requirements = #{requirements},
-            contact = #{contact}, total_quota = #{totalQuota}, status = #{status}
+        SET college_id = #{collegeId}, code = #{code}, name = #{name}, intro = #{intro},
+            direction = #{direction}, training_plan = #{trainingPlan}, requirements = #{requirements},
+            contact = #{contact}, location = #{location}, cover_image = #{coverImage},
+            total_quota = #{totalQuota}, status = #{status}
         WHERE id = #{id}
     </update>
 

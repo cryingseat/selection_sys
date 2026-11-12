@@ -45,8 +45,8 @@ def expect_error(method, path, token=None, body=None, code=None):
     return data
 
 
-def login(account):
-    data = ok("POST", "/api/auth/login", body={"account": account, "password": PASSWORD})
+def login(account, college_id=1):
+    data = ok("POST", "/api/auth/login", body={"account": account, "password": PASSWORD, "collegeId": college_id})
     return data["token"]
 
 
@@ -72,9 +72,33 @@ step("学生 / 导师 / 管理员账号登录成功")
 
 home = ok("GET", "/api/public/home")
 assert home["batch"]["status"] == "INTENT_OPEN"
-assert len(home["labs"]) == 3
+assert len(home["labs"]) == 6
+assert len(home["colleges"]) == 4
 assert home["announcements"], "公开公告应可见"
-step("公开首页返回批次、3 个实训室与公告")
+step("游客公开首页返回 4 个学院、6 个实训室与公告")
+
+# 登录学院隔离：信息学院学生只看到 3 个本学院实训室
+student_home = ok("GET", "/api/public/home", student1)
+assert student_home["scopedCollegeId"] == 1
+assert len(student_home["labs"]) == 3
+math_student = login("S2024001", 2)
+math_home = ok("GET", "/api/public/home", math_student)
+assert math_home["scopedCollegeId"] == 2
+assert len(math_home["labs"]) == 1
+step("登录后只返回本学院实训室（信息 3 个 / 数学 1 个）")
+
+# 账号与所选学院不一致时拒绝登录
+status, mismatch = call("POST", "/api/auth/login", body={
+    "account": "S2023001", "password": PASSWORD, "collegeId": 2
+})
+assert status == 400 and mismatch.get("code") == 40028, mismatch
+step("账号与所选学院不一致时拒绝登录")
+
+# 学院管理员只能管理本学院实验室
+admin_math = login("admin_math", 2)
+math_labs = ok("GET", "/api/admin/labs", admin_math)
+assert len(math_labs) == 1 and math_labs[0]["collegeId"] == 2
+step("数学学院管理员只看到 1 个本学院实训室")
 
 # 资格校验：2024 级学生不在本批次
 expect_error("POST", "/api/student/application/submit", student13,

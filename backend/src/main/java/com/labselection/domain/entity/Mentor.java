@@ -23,6 +23,8 @@ public class Mentor {
     private String account;
     private String labName;
     private String labCode;
+    private Long collegeId;
+    private String collegeName;
     private Integer confirmedCount;
     private Integer offeredCount;
     private Integer applicantCount;

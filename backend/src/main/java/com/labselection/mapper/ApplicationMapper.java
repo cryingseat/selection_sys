@@ -15,19 +15,23 @@ public interface ApplicationMapper {
 
     List<Application> findByStudent(@Param("studentId") Long studentId);
 
-    List<Application> findByBatchWithStudent(@Param("batchId") Long batchId);
+    List<Application> findByBatchWithStudent(@Param("batchId") Long batchId,
+                                             @Param("collegeId") Long collegeId);
 
     List<Application> search(@Param("batchId") Long batchId,
                              @Param("status") String status,
                              @Param("keyword") String keyword,
+                             @Param("collegeId") Long collegeId,
                              @Param("offset") int offset,
                              @Param("limit") int limit);
 
     long countSearch(@Param("batchId") Long batchId,
                      @Param("status") String status,
-                     @Param("keyword") String keyword);
+                     @Param("keyword") String keyword,
+                     @Param("collegeId") Long collegeId);
 
-    List<Application> listUnadmitted(@Param("batchId") Long batchId);
+    List<Application> listUnadmitted(@Param("batchId") Long batchId,
+                                     @Param("collegeId") Long collegeId);
 
     int insert(Application application);
 

@@ -48,10 +48,10 @@ onMounted(load)
   </PageHeader>
 
   <div class="stat-grid">
-    <StatCard label="面试总数" :value="interviews.length" hint="本实训室" tint="#e8f1fb" />
+    <StatCard label="面试总数" :value="interviews.length" hint="本实训室" tint="#f2efe9" />
     <StatCard label="已完成" :value="completed.length" hint="已录入结论与评分" tint="#e7f5f1" />
     <StatCard label="待完成" :value="pending.length" hint="待面试或待录入" tint="#fff0e6" />
-    <StatCard label="平均分" :value="avgScore" hint="已完成面试" tint="#eaf3fb" />
+    <StatCard label="平均分" :value="avgScore" hint="已完成面试" tint="#f7f5f0" />
   </div>
 
   <div v-if="loading" class="card card-pad"><div class="loading-block"><div class="spinner" />正在加载面试记录…</div></div>

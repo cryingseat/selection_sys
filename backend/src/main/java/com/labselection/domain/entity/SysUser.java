@@ -12,6 +12,7 @@ public class SysUser {
     private String passwordHash;
     private String displayName;
     private Role role;
+    private Long collegeId;
     private Boolean enabled;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -17,12 +17,16 @@ public interface StudentMapper {
     List<Student> search(@Param("keyword") String keyword,
                          @Param("grade") String grade,
                          @Param("major") String major,
+                         @Param("collegeId") Long collegeId,
                          @Param("offset") int offset,
                          @Param("limit") int limit);
 
     long countSearch(@Param("keyword") String keyword,
                      @Param("grade") String grade,
-                     @Param("major") String major);
+                     @Param("major") String major,
+                     @Param("collegeId") Long collegeId);
+
+    long countByCollege(@Param("collegeId") Long collegeId);
 
     int insert(Student student);
 

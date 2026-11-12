@@ -102,7 +102,7 @@ async function logout() {
         <span class="brand-mark">选</span>
         <span class="brand-text">
           <strong>实训室进组选拔</strong>
-          <span>Lab Selection</span>
+          <span>Open Studio</span>
         </span>
       </router-link>
 
@@ -123,11 +123,15 @@ async function logout() {
       </div>
 
       <div class="sidebar-foot">
-        <div class="flex" style="justify-content: space-between">
-          <span class="tag">当前身份</span>
-          <strong>{{ roleLabel }}</strong>
+        <div class="flex" style="justify-content: space-between; gap: 8px">
+          <span class="tag">所属学院</span>
+          <strong class="tiny" style="text-align: right; color: var(--ink)">{{ auth.user?.collegeName || '—' }}</strong>
         </div>
-        <div class="tiny mt-4" style="color: var(--muted-2)">选拔流程公开透明 · 结果全程留痕</div>
+        <div class="flex mt-4" style="justify-content: space-between">
+          <span class="tag">当前身份</span>
+          <strong class="tiny" style="color: var(--ink)">{{ roleLabel }}</strong>
+        </div>
+        <div class="tiny mt-8" style="color: var(--muted-2)">选拔流程公开透明 · 结果全程留痕</div>
       </div>
     </aside>
 
@@ -139,10 +143,11 @@ async function logout() {
           </router-link>
           <div>
             <div class="topbar-title">{{ currentTitle }}</div>
-            <div class="topbar-sub">学生实训室进组选拔系统</div>
+            <div class="topbar-sub">学生实训室进组选拔系统 · {{ auth.user?.collegeName || '全校' }}</div>
           </div>
         </div>
         <div class="topbar-right">
+          <span class="pill pill--gray">{{ auth.user?.collegeName || '全校' }}</span>
           <span class="pill pill--blue">{{ roleLabel }}</span>
           <div class="flex" style="gap: 8px">
             <div class="avatar">{{ avatarText }}</div>
@@ -164,6 +169,6 @@ async function logout() {
 <style scoped>
 .nav-scroll { flex: 1; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
 .nav-scroll::-webkit-scrollbar { width: 4px; }
-.nav-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); border-radius: 4px; }
-.tag { font-size: 11px; color: rgba(255, 255, 255, 0.55); }
+.nav-scroll::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
+.tag { font-size: 11px; color: var(--muted); }
 </style>

@@ -9,6 +9,7 @@ import java.util.List;
 @Data
 public class Lab {
     private Long id;
+    private Long collegeId;
     private String code;
     private String name;
     private String intro;
@@ -16,12 +17,17 @@ public class Lab {
     private String trainingPlan;
     private String requirements;
     private String contact;
+    private String location;
+    private String coverImage;
     private Integer totalQuota;
     private LabStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     /** 关联查询与统计字段 */
+    private String collegeName;
+    private String collegeCode;
+    private String collegeAccent;
     private List<Mentor> mentors;
     private Integer mentorCount;
     private Integer applicantCount;

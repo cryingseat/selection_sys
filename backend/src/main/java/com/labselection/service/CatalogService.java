@@ -1,5 +1,7 @@
 package com.labselection.service;
 
+import com.labselection.auth.AuthContext;
+import com.labselection.auth.CurrentUser;
 import com.labselection.auth.PasswordService;
 import com.labselection.common.BusinessException;
 import com.labselection.common.ErrorCode;
@@ -50,9 +52,10 @@ public class CatalogService {
 
     public List<Lab> labs() {
         SelectionBatch batch = stageGuard.current();
-        List<Lab> labs = labMapper.listWithStats(batch.getId());
+        Long collegeId = currentCollegeId();
+        List<Lab> labs = labMapper.listWithStats(batch.getId(), collegeId);
         for (Lab lab : labs) {
-            lab.setMentors(mentorMapper.listWithStats(batch.getId(), lab.getId()));
+            lab.setMentors(mentorMapper.listWithStats(batch.getId(), collegeId, lab.getId()));
             long used = Math.max(offerMapper.countActiveByLab(lab.getId(), batch.getId()),
                     assignmentMapper.countByLab(lab.getId(), batch.getId()));
             lab.setRemainingQuota(Math.max(0, lab.getTotalQuota() - (int) used));
@@ -86,6 +89,7 @@ public class CatalogService {
         }
 
         if (id == null) {
+            request.setCollegeId(currentCollegeId());
             request.setStatus(request.getStatus() == null ? LabStatus.ACTIVE : request.getStatus());
             labMapper.insert(request);
             auditService.log(batch.getId(), "LAB_CREATE", "LAB", request.getId(),
@@ -96,6 +100,8 @@ public class CatalogService {
         if (existing == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "实训室不存在");
         }
+        assertSameCollege(existing.getCollegeId());
+        request.setCollegeId(existing.getCollegeId());
         request.setId(id);
         request.setStatus(request.getStatus() == null ? existing.getStatus() : request.getStatus());
         try {
@@ -116,6 +122,7 @@ public class CatalogService {
         if (lab == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "实训室不存在");
         }
+        assertSameCollege(lab.getCollegeId());
         lab.setStatus(enabled ? LabStatus.ACTIVE : LabStatus.DISABLED);
         labMapper.update(lab);
         auditService.log(batch.getId(), "LAB_STATUS", "LAB", id,
@@ -124,7 +131,7 @@ public class CatalogService {
 
     public PageResult<Mentor> mentors(String keyword, Long labId, int page, int size) {
         SelectionBatch batch = stageGuard.current();
-        List<Mentor> all = mentorMapper.listWithStats(batch.getId(), labId);
+        List<Mentor> all = mentorMapper.listWithStats(batch.getId(), currentCollegeId(), labId);
         if (keyword != null && !keyword.isBlank()) {
             String key = keyword.trim();
             all = all.stream()
@@ -151,6 +158,7 @@ public class CatalogService {
         if (lab == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "实训室不存在");
         }
+        assertSameCollege(lab.getCollegeId());
         assertMentorQuota(lab, request.quota(), null);
         String password = request.password() == null || request.password().isBlank()
                 ? "123456" : request.password();
@@ -161,6 +169,7 @@ public class CatalogService {
         user.setPasswordHash(passwordService.encode(password));
         user.setDisplayName(request.name());
         user.setRole(Role.MENTOR);
+        user.setCollegeId(lab.getCollegeId());
         user.setEnabled(request.enabled() == null || request.enabled());
         userMapper.insert(user);
 
@@ -195,6 +204,8 @@ public class CatalogService {
         if (lab == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "实训室不存在");
         }
+        assertSameCollege(existing.getCollegeId());
+        assertSameCollege(lab.getCollegeId());
         assertMentorQuota(lab, request.quota(), id);
         existing.setName(request.name());
         existing.setTitle(request.title());
@@ -223,6 +234,7 @@ public class CatalogService {
         if (mentor == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "导师不存在");
         }
+        assertSameCollege(mentor.getCollegeId());
         mentor.setEnabled(enabled);
         mentorMapper.update(mentor);
         userMapper.updateEnabled(mentor.getUserId(), enabled);
@@ -236,6 +248,7 @@ public class CatalogService {
         if (mentor == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "导师不存在");
         }
+        assertSameCollege(mentor.getCollegeId());
         passwordService.assertStrength(password);
         userMapper.updatePassword(mentor.getUserId(), passwordService.encode(password));
         auditService.log(stageGuard.current().getId(), "PASSWORD_RESET", "MENTOR", id,
@@ -245,9 +258,9 @@ public class CatalogService {
     public PageResult<Student> students(String keyword, String grade, int page, int size) {
         int safePage = Math.max(1, page);
         int safeSize = Math.min(100, Math.max(1, size));
-        List<Student> records = studentMapper.search(keyword, grade, null,
+        List<Student> records = studentMapper.search(keyword, grade, null, currentCollegeId(),
                 (safePage - 1) * safeSize, safeSize);
-        long total = studentMapper.countSearch(keyword, grade, null);
+        long total = studentMapper.countSearch(keyword, grade, null, currentCollegeId());
         return PageResult.of(records, total, safePage, safeSize);
     }
 
@@ -270,11 +283,13 @@ public class CatalogService {
         user.setPasswordHash(passwordService.encode(password));
         user.setDisplayName(request.name());
         user.setRole(Role.STUDENT);
+        user.setCollegeId(currentCollegeId());
         user.setEnabled(true);
         userMapper.insert(user);
 
         Student student = new Student();
         student.setUserId(user.getId());
+        student.setCollegeId(currentCollegeId());
         student.setStudentNo(request.studentNo());
         student.setName(request.name());
         student.setGender(request.gender());
@@ -299,6 +314,7 @@ public class CatalogService {
         if (student == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "学生不存在");
         }
+        assertSameCollege(student.getCollegeId());
         student.setName(request.name());
         student.setGender(request.gender());
         student.setMajor(request.major());
@@ -322,6 +338,7 @@ public class CatalogService {
         if (student == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "学生不存在");
         }
+        assertSameCollege(student.getCollegeId());
         passwordService.assertStrength(password);
         userMapper.updatePassword(student.getUserId(), passwordService.encode(password));
         auditService.log(stageGuard.current().getId(), "PASSWORD_RESET", "STUDENT", id,
@@ -334,6 +351,7 @@ public class CatalogService {
         if (student == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "学生不存在");
         }
+        assertSameCollege(student.getCollegeId());
         userMapper.updateEnabled(student.getUserId(), enabled);
         auditService.log(stageGuard.current().getId(), "STUDENT_STATUS", "STUDENT", id,
                 enabled ? "启用学生账号" : "停用学生账号", null);
@@ -427,5 +445,19 @@ public class CatalogService {
 
     private boolean contains(String value, String keyword) {
         return value != null && value.contains(keyword);
+    }
+
+    private Long currentCollegeId() {
+        CurrentUser current = AuthContext.get();
+        if (current.collegeId() == null) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "当前账号未绑定学院");
+        }
+        return current.collegeId();
+    }
+
+    private void assertSameCollege(Long collegeId) {
+        if (collegeId == null || !collegeId.equals(currentCollegeId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "只能管理本学院的实训室与人员");
+        }
     }
 }

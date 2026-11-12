@@ -1,8 +1,11 @@
 package com.labselection.service;
 
+import com.labselection.auth.AuthContext;
+import com.labselection.auth.CurrentUser;
 import com.labselection.common.BusinessException;
 import com.labselection.common.ErrorCode;
 import com.labselection.domain.entity.Announcement;
+import com.labselection.domain.entity.College;
 import com.labselection.domain.entity.FinalAssignment;
 import com.labselection.domain.entity.Lab;
 import com.labselection.domain.entity.Mentor;
@@ -13,6 +16,7 @@ import com.labselection.domain.enums.LabStatus;
 import com.labselection.domain.enums.PublicityStatus;
 import com.labselection.mapper.AnnouncementMapper;
 import com.labselection.mapper.AssignmentMapper;
+import com.labselection.mapper.CollegeMapper;
 import com.labselection.mapper.LabMapper;
 import com.labselection.mapper.MentorMapper;
 import com.labselection.mapper.OfferMapper;
@@ -35,6 +39,7 @@ public class PublicService {
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("MM月dd日 HH:mm");
 
     private final StageGuard stageGuard;
+    private final CollegeMapper collegeMapper;
     private final LabMapper labMapper;
     private final MentorMapper mentorMapper;
     private final AnnouncementMapper announcementMapper;
@@ -44,7 +49,8 @@ public class PublicService {
 
     public Map<String, Object> home() {
         SelectionBatch batch = stageGuard.current();
-        List<Lab> labs = labMapper.listWithStats(batch.getId());
+        Long collegeId = currentCollegeId();
+        List<Lab> labs = labMapper.listWithStats(batch.getId(), collegeId);
         for (Lab lab : labs) {
             decorateLab(lab, batch.getId());
         }
@@ -53,6 +59,8 @@ public class PublicService {
         result.put("batch", batch);
         result.put("stages", stages(batch));
         result.put("labs", labs);
+        result.put("colleges", collegeMapper.findAll());
+        result.put("scopedCollegeId", collegeId);
         result.put("announcements", announcementMapper.findPublic(6));
         Publicity publicity = publicityMapper.findPublishedOrClosed(batch.getId());
         result.put("publicity", publicity);
@@ -65,7 +73,7 @@ public class PublicService {
 
     public List<Lab> labs() {
         SelectionBatch batch = stageGuard.current();
-        List<Lab> labs = labMapper.listWithStats(batch.getId());
+        List<Lab> labs = labMapper.listWithStats(batch.getId(), currentCollegeId());
         labs.forEach(lab -> decorateLab(lab, batch.getId()));
         return labs;
     }
@@ -74,6 +82,11 @@ public class PublicService {
         Lab lab = labMapper.findById(id);
         if (lab == null || lab.getStatus() != LabStatus.ACTIVE) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "实训室不存在或已停用");
+        }
+        CurrentUser current = AuthContext.getOrNull();
+        if (current != null && current.collegeId() != null
+                && !current.collegeId().equals(lab.getCollegeId())) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "该实训室不属于你所在的学院");
         }
         SelectionBatch batch = stageGuard.current();
         decorateLab(lab, batch.getId());
@@ -93,7 +106,16 @@ public class PublicService {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("batch", batch);
         result.put("publicity", publicity);
-        result.put("assignments", assignmentMapper.findPublicByBatch(batch.getId()));
+        List<FinalAssignment> assignments = assignmentMapper.findPublicByBatch(batch.getId());
+        Long collegeId = currentCollegeId();
+        if (collegeId != null) {
+            assignments = assignments.stream()
+                    .filter(item -> item.getLabId() != null
+                            && labMapper.findById(item.getLabId()) != null
+                            && collegeId.equals(labMapper.findById(item.getLabId()).getCollegeId()))
+                    .toList();
+        }
+        result.put("assignments", assignments);
         return result;
     }
 
@@ -124,8 +146,17 @@ public class PublicService {
         return stats;
     }
 
+    public List<College> colleges() {
+        return collegeMapper.findAll();
+    }
+
+    private Long currentCollegeId() {
+        CurrentUser current = AuthContext.getOrNull();
+        return current == null ? null : current.collegeId();
+    }
+
     private void decorateLab(Lab lab, Long batchId) {
-        List<Mentor> mentors = mentorMapper.listWithStats(batchId, lab.getId());
+        List<Mentor> mentors = mentorMapper.listWithStats(batchId, lab.getCollegeId(), lab.getId());
         mentors.removeIf(m -> !Boolean.TRUE.equals(m.getEnabled()));
         for (Mentor mentor : mentors) {
             int used = Math.max(mentor.getOfferedCount() == null ? 0 : mentor.getOfferedCount(),

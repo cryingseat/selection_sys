@@ -123,9 +123,9 @@ async function talk() {
 
     <div class="stat-grid">
       <StatCard label="待调剂学生" :value="unadmitted.length" hint="已提交报名且未录取" tint="#fff0e6" />
-      <StatCard label="内部调剂" :value="internalCount" hint="同实训室调整导师" tint="#e8f1fb" />
+      <StatCard label="内部调剂" :value="internalCount" hint="同实训室调整导师" tint="#f2efe9" />
       <StatCard label="跨室调剂" :value="crossCount" hint="需学生明确授权" tint="#e7f5f1" />
-      <StatCard label="调剂记录" :value="records.length" hint="含谈话安置" tint="#eaf3fb" />
+      <StatCard label="调剂记录" :value="records.length" hint="含谈话安置" tint="#f7f5f0" />
     </div>
 
     <div class="notice notice--warn">

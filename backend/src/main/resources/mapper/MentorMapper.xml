@@ -4,37 +4,44 @@
 
     <sql id="baseCols">
         m.id, m.user_id, m.mentor_no, m.name, m.title, m.lab_id, m.research_direction,
-        m.profile, m.quota, m.enabled, m.created_at, m.updated_at
+        m.profile, m.quota, m.enabled, m.created_at, m.updated_at,
+        l.college_id AS college_id, c.name AS college_name
+    </sql>
+
+    <sql id="fromJoin">
+        FROM mentor m
+        JOIN lab l ON l.id = m.lab_id
+        LEFT JOIN college c ON c.id = l.college_id
     </sql>
 
     <select id="findById" resultType="Mentor">
         SELECT <include refid="baseCols"/>, l.name AS lab_name, l.code AS lab_code
-        FROM mentor m JOIN lab l ON l.id = m.lab_id
+        <include refid="fromJoin"/>
         WHERE m.id = #{id}
     </select>
 
     <select id="findByUserId" resultType="Mentor">
         SELECT <include refid="baseCols"/>, l.name AS lab_name, l.code AS lab_code
-        FROM mentor m JOIN lab l ON l.id = m.lab_id
+        <include refid="fromJoin"/>
         WHERE m.user_id = #{userId}
     </select>
 
     <select id="findAll" resultType="Mentor">
         SELECT <include refid="baseCols"/>, l.name AS lab_name, l.code AS lab_code
-        FROM mentor m JOIN lab l ON l.id = m.lab_id
-        ORDER BY m.lab_id, m.id
+        <include refid="fromJoin"/>
+        ORDER BY l.college_id, m.lab_id, m.id
     </select>
 
     <select id="findByLabId" resultType="Mentor">
         SELECT <include refid="baseCols"/>, l.name AS lab_name, l.code AS lab_code
-        FROM mentor m JOIN lab l ON l.id = m.lab_id
+        <include refid="fromJoin"/>
         WHERE m.lab_id = #{labId} AND m.enabled = 1
         ORDER BY m.id
     </select>
 
     <select id="search" resultType="Mentor">
         SELECT <include refid="baseCols"/>, l.name AS lab_name, l.code AS lab_code
-        FROM mentor m JOIN lab l ON l.id = m.lab_id
+        <include refid="fromJoin"/>
         <where>
             <if test="keyword != null and keyword != ''">
                 AND (m.name LIKE CONCAT('%', #{keyword}, '%')
@@ -44,7 +51,7 @@
             <if test="labId != null">AND m.lab_id = #{labId}</if>
             <if test="enabled != null">AND m.enabled = #{enabled}</if>
         </where>
-        ORDER BY m.lab_id, m.id
+        ORDER BY l.college_id, m.lab_id, m.id
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
@@ -71,11 +78,12 @@
                    AND o.status IN ('OFFERED', 'CONFIRMED')) AS offered_count,
                (SELECT COUNT(DISTINCT i.application_id) FROM application_intent i
                  WHERE i.mentor_id = m.id AND i.batch_id = #{batchId}) AS applicant_count
-        FROM mentor m JOIN lab l ON l.id = m.lab_id
+        <include refid="fromJoin"/>
         <where>
+            <if test="collegeId != null">AND l.college_id = #{collegeId}</if>
             <if test="labId != null">AND m.lab_id = #{labId}</if>
         </where>
-        ORDER BY m.lab_id, m.id
+        ORDER BY l.college_id, m.lab_id, m.id
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
@@ -96,7 +104,9 @@
     </update>
 
     <select id="lockById" resultType="Mentor">
-        SELECT <include refid="baseCols"/> FROM mentor m WHERE m.id = #{id} FOR UPDATE
+        SELECT m.id, m.user_id, m.mentor_no, m.name, m.title, m.lab_id, m.research_direction,
+               m.profile, m.quota, m.enabled, m.created_at, m.updated_at
+        FROM mentor m WHERE m.id = #{id} FOR UPDATE
     </select>
 
     <select id="count" resultType="long">

@@ -3,7 +3,7 @@
 <mapper namespace="com.labselection.mapper.UserMapper">
 
     <sql id="cols">
-        id, account, password_hash, display_name, role, enabled, created_at, updated_at
+        id, account, password_hash, display_name, role, college_id, enabled, created_at, updated_at
     </sql>
 
     <select id="findById" resultType="SysUser">
@@ -21,8 +21,8 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO sys_user (account, password_hash, display_name, role, enabled)
-        VALUES (#{account}, #{passwordHash}, #{displayName}, #{role}, #{enabled})
+        INSERT INTO sys_user (account, password_hash, display_name, role, college_id, enabled)
+        VALUES (#{account}, #{passwordHash}, #{displayName}, #{role}, #{collegeId}, #{enabled})
     </insert>
 
     <update id="updatePassword">
