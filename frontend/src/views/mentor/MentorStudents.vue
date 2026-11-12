@@ -48,10 +48,10 @@ onMounted(load)
   </PageHeader>
 
   <div class="stat-grid">
-    <StatCard label="最终学生" :value="students.length" :hint="`招生名额 ${mentor.quota || 0} 人`" tint="#e5f8f4" />
+    <StatCard label="最终学生" :value="students.length" :hint="`招生名额 ${mentor.quota || 0} 人`" tint="#e7f5f1" />
     <StatCard label="待确认拟录取" :value="activeOffers.length" hint="等待学生确认" tint="#fff0e6" />
-    <StatCard label="已确认意向" :value="confirmedOffers.length" hint="含补录/递补" tint="#e9efff" />
-    <StatCard label="剩余名额" :value="Math.max(0, (mentor.quota || 0) - students.length)" hint="最终名单口径" tint="#f0ebff" />
+    <StatCard label="已确认意向" :value="confirmedOffers.length" hint="含补录/递补" tint="#e8f1fb" />
+    <StatCard label="剩余名额" :value="Math.max(0, (mentor.quota || 0) - students.length)" hint="最终名单口径" tint="#eaf3fb" />
   </div>
 
   <div v-if="loading" class="card card-pad"><div class="loading-block"><div class="spinner" />正在加载学生名单…</div></div>

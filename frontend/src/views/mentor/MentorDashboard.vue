@@ -51,7 +51,7 @@ onMounted(load)
   <div v-if="loading" class="card card-pad"><div class="loading-block"><div class="spinner" />正在加载工作台…</div></div>
 
   <template v-else-if="data">
-    <section class="card card-pad" style="background: linear-gradient(120deg, #f7f9ff, #fff 60%, #f7f4ff)">
+    <section class="card card-pad" style="background: linear-gradient(120deg, #f6faff, #fff 60%, #f0f7fd)">
       <div class="flex flex-wrap" style="justify-content: space-between; gap: 18px">
         <div>
           <div class="flex"><span class="pill pill--violet">{{ lab.name }}</span><span class="pill pill--gray">{{ mentor.title }}</span></div>
@@ -69,10 +69,10 @@ onMounted(load)
     </section>
 
     <div class="stat-grid">
-      <StatCard label="报名学生" :value="stats.applicantCount" hint="报名你的学生数" tint="#e9efff" />
+      <StatCard label="报名学生" :value="stats.applicantCount" hint="报名你的学生数" tint="#e8f1fb" />
       <StatCard label="待处理意向" :value="stats.pendingCount" hint="需要给出初选结论" tint="#fff0e6" />
-      <StatCard label="已完成面试" :value="stats.interviewCount" hint="本实训室统一面试" tint="#f0ebff" />
-      <StatCard label="候补 / 拟录取" :value="`${stats.waitlistCount} / ${stats.offerCount}`" hint="拟录取待学生确认" tint="#e5f8f4" />
+      <StatCard label="已完成面试" :value="stats.interviewCount" hint="本实训室统一面试" tint="#eaf3fb" />
+      <StatCard label="候补 / 拟录取" :value="`${stats.waitlistCount} / ${stats.offerCount}`" hint="拟录取待学生确认" tint="#e7f5f1" />
     </div>
 
     <div class="split">

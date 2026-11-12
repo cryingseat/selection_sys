@@ -262,7 +262,7 @@ sequenceDiagram
 - `stores/auth`：Token/用户持久化到 localStorage，401 自动清理并跳登录；
 - `api/client`：统一 `baseURL=/api`、Bearer 注入、业务码/HTTP 错误归一化；
 - 复用组件：`StatusPill`、`StatCard`、`StepFlow`、`MentorPicker`、`ModalDialog`、`EmptyState`、`ToastHost`；
-- 视觉：蓝紫渐变 + 白色卡片 + 柔和阴影，匹配“学生实训室选拔”海报的清爽风格；
+- 视觉：参考河北师范大学官网的深蓝 + 白色配色，深蓝侧栏 / 导航、浅蓝灰背景、白色卡片与柔和阴影；
 - 所有业务数据来自后端接口，无写死业务数据。
 
 ## 9. 目录与代码组织

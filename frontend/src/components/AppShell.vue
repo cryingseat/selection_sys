@@ -164,6 +164,6 @@ async function logout() {
 <style scoped>
 .nav-scroll { flex: 1; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
 .nav-scroll::-webkit-scrollbar { width: 4px; }
-.nav-scroll::-webkit-scrollbar-thumb { background: #dbe3f1; border-radius: 4px; }
-.tag { font-size: 11px; color: var(--muted-2); }
+.nav-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); border-radius: 4px; }
+.tag { font-size: 11px; color: rgba(255, 255, 255, 0.55); }
 </style>

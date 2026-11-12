@@ -3,7 +3,7 @@ defineProps({
   label: { type: String, required: true },
   value: { type: [String, Number], default: '—' },
   hint: { type: String, default: '' },
-  tint: { type: String, default: '#edf2ff' }
+  tint: { type: String, default: '#eaf2fb' }
 })
 </script>
 

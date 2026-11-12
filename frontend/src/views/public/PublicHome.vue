@@ -213,7 +213,7 @@ function ctaRoute() {
                 <Icon name="clock" :size="16" />
                 <span>逾期未确认视为放弃；放弃与逾期产生的空缺进入补录，按候补顺位依次递补。</span>
               </div>
-              <div class="notice notice--info" style="background: #f3f0ff; border-color: #e1d9ff; color: #5a42c9">
+              <div class="notice notice--info" style="background: #eaf3fb; border-color: #cfe0f2; color: #14539a">
                 <Icon name="shield" :size="16" />
                 <span>调剂仅在学生授权范围内进行，优先实训室内部，其次跨实训室，最后安排谈话安置。</span>
               </div>
