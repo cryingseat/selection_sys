@@ -98,7 +98,7 @@ function isSelected(mentorId) {
             v-for="mentor in lab.mentors"
             :key="mentor.id"
             class="flex mentor-row"
-            style="padding: 10px 12px; border-bottom: 1px solid #eef2f8; gap: 10px"
+            style="padding: 10px 12px; border-bottom: 1px solid #edf3fa; gap: 10px"
           >
             <div style="min-width: 0; flex: 1">
               <div><strong>{{ mentor.name }}</strong> <span class="muted tiny">{{ mentor.title }}</span></div>

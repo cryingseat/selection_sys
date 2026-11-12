@@ -102,10 +102,10 @@ async function expireOffers() {
 
   <template v-else-if="detail">
     <div class="stat-grid">
-      <StatCard label="待确认拟录取" :value="review.pendingOffers || 0" hint="学生尚未确认" tint="#fff0e6" />
-      <StatCard label="缺面试记录" :value="review.offerWithoutInterview || 0" hint="拟录取必须有面试" tint="#ffeaec" />
-      <StatCard label="审核问题" :value="review.issueCount || 0" :hint="`必须处理 ${review.errorCount || 0} 项`" tint="#fff5db" />
-      <StatCard label="最终录取" :value="review.admittedCount || 0" hint="已确认学生" tint="#e7f5f1" />
+      <StatCard label="待确认拟录取" :value="review.pendingOffers || 0" hint="学生尚未确认" tint="#fff4e2" />
+      <StatCard label="缺面试记录" :value="review.offerWithoutInterview || 0" hint="拟录取必须有面试" tint="#fceef0" />
+      <StatCard label="审核问题" :value="review.issueCount || 0" :hint="`必须处理 ${review.errorCount || 0} 项`" tint="#fff6df" />
+      <StatCard label="最终录取" :value="review.admittedCount || 0" hint="已确认学生" tint="#e8f7f1" />
     </div>
 
     <div class="notice notice--info">

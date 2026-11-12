@@ -110,7 +110,7 @@ function directionTags(lab) {
 }
 
 function tagTint(index) {
-  const colors = ['#f2efe9', '#f4f4f5', '#f7f5f0', '#ede9e2']
+  const colors = ['#eaf2fc', '#f1f6fd', '#fff6e4', '#e8f0fa']
   return colors[index % colors.length]
 }
 </script>
@@ -122,8 +122,8 @@ function tagTint(index) {
         <router-link to="/" class="brand" style="padding: 0">
           <span class="brand-mark">选</span>
           <span class="brand-text">
-            <strong>实训室进组选拔</strong>
-            <span>Open Studio</span>
+            <strong>河北师范大学</strong>
+            <span>实训室进组选拔系统</span>
           </span>
         </router-link>
         <div class="public-nav-links">
@@ -153,7 +153,7 @@ function tagTint(index) {
       <template v-if="loading">
         <div class="editorial-head">
           <div>
-            <p class="kicker">CAMPUS STUDIO DIRECTORY · 2026 AUTUMN</p>
+            <p class="kicker">HEBEI NORMAL UNIVERSITY · 2026 AUTUMN</p>
             <h1>走近真实空间，<br />选择你的同行导师</h1>
           </div>
           <div class="skeleton" style="height: 60px; width: 360px" />
@@ -166,7 +166,7 @@ function tagTint(index) {
       <template v-else-if="home">
         <section class="editorial-head">
           <div>
-            <p class="kicker">CAMPUS STUDIO DIRECTORY · 2026 AUTUMN</p>
+            <p class="kicker">HEBEI NORMAL UNIVERSITY · 2026 AUTUMN</p>
             <h1>走近真实空间，<br />选择你的同行导师</h1>
           </div>
           <p class="editorial-intro">
@@ -188,7 +188,7 @@ function tagTint(index) {
               :class="{ active: activeCollege === college.id }"
               @click="setCollege(college.id)"
             >
-              <span class="dot" :style="{ backgroundColor: college.accentColor || '#71717a' }" />
+              <span class="dot" :style="{ backgroundColor: college.accentColor || '#607a99' }" />
               {{ college.name }} <span class="count">{{ collegeCount(college.id) }}</span>
             </button>
           </div>
@@ -215,7 +215,7 @@ function tagTint(index) {
               <div v-else class="cover-fallback">{{ lab.code }}</div>
               <div class="studio-badges">
                 <div class="studio-badges-left">
-                  <span class="badge-light">{{ lab.collegeName }}</span>
+                  <span v-if="lab.collegeName" class="badge-light">{{ lab.collegeName }}</span>
                   <span class="badge-dark">{{ lab.location || lab.contact || '校内实训空间' }}</span>
                 </div>
                 <span class="badge-light">{{ lab.remainingQuota > 0 ? `余 ${lab.remainingQuota}` : '名额已满' }}</span>
@@ -251,7 +251,7 @@ function tagTint(index) {
                   @click="openMentor(mentor, lab)"
                   @keyup.enter="openMentor(mentor, lab)"
                 >
-                  <span class="mentor-avatar" :style="{ backgroundColor: lab.collegeAccent || '#3f3f46' }">{{ mentor.name.slice(0, 1) }}</span>
+                  <span class="mentor-avatar" :style="{ backgroundColor: lab.collegeAccent || '#294a72' }">{{ mentor.name.slice(0, 1) }}</span>
                   <span class="mentor-mini-body">
                     <strong>{{ mentor.name }} <span>{{ mentor.title }}</span></strong>
                     <em>招录 {{ mentor.quota }} 人 · {{ mentor.applicantCount || 0 }} 报</em>
@@ -398,7 +398,7 @@ function tagTint(index) {
     </main>
 
     <footer class="public-footer">
-      Open Studio · 学生实训室进组选拔系统
+      河北师范大学 · 学生实训室进组选拔系统
       <span style="margin: 0 8px">|</span> 全校实训室与导师空间画廊
       <span style="margin: 0 8px">|</span> 数据仅用于教学演示
     </footer>
@@ -439,7 +439,7 @@ function tagTint(index) {
     <ModalDialog :open="Boolean(activeMentor)" :title="activeMentor?.mentor?.name || ''" :subtitle="activeMentor?.lab?.name" @close="activeMentor = null">
       <div v-if="activeMentor" class="stack">
         <div class="flex">
-          <span class="mentor-avatar" style="width: 48px; height: 48px; font-size: 18px" :style="{ backgroundColor: activeMentor.lab.collegeAccent || '#3f3f46' }">
+          <span class="mentor-avatar" style="width: 48px; height: 48px; font-size: 18px" :style="{ backgroundColor: activeMentor.lab.collegeAccent || '#294a72' }">
             {{ activeMentor.mentor.name.slice(0, 1) }}
           </span>
           <div>

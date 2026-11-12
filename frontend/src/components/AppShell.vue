@@ -101,8 +101,8 @@ async function logout() {
       <router-link to="/" class="brand">
         <span class="brand-mark">选</span>
         <span class="brand-text">
-          <strong>实训室进组选拔</strong>
-          <span>Open Studio</span>
+          <strong>河北师范大学</strong>
+          <span>实训室进组选拔系统</span>
         </span>
       </router-link>
 
@@ -143,7 +143,7 @@ async function logout() {
           </router-link>
           <div>
             <div class="topbar-title">{{ currentTitle }}</div>
-            <div class="topbar-sub">学生实训室进组选拔系统 · {{ auth.user?.collegeName || '全校' }}</div>
+            <div class="topbar-sub">河北师范大学 · 学生实训室进组选拔系统</div>
           </div>
         </div>
         <div class="topbar-right">

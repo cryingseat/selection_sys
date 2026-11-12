@@ -261,12 +261,12 @@ sequenceDiagram
 
 ## 8. 前端设计
 
-- `AppShell`：暖纸色侧边栏 + 顶栏 + 角色导航，顶栏与侧栏展示所属学院；移动端自动折叠；
+- `AppShell`：冰雪浅蓝侧边栏 + 顶栏 + 角色导航，顶栏与侧栏展示所属学院；移动端自动折叠；
 - `router`：路由级角色守卫，未登录跳登录，角色不符跳各自首页；
 - `stores/auth`：Token/用户持久化到 localStorage，401 自动清理并跳登录；
 - `api/client`：统一 `baseURL=/api`、Bearer 注入、业务码/HTTP 错误归一化；
 - 复用组件：`StatusPill`、`StatCard`、`StepFlow`、`MentorPicker`、`ModalDialog`、`EmptyState`、`ToastHost`；
-- 视觉：Open Studio 编辑部画廊风格——暖纸色背景、墨黑文字、衬线大标题、白色 24–28px 圆角卡片、16:9 空间实景封面、黑色胶囊按钮；参考 `open_studio.html`；
+- 视觉：师大蓝学术画廊风格——冰雪浅蓝背景、深海军蓝文字、衬线大标题、白色 24–28px 圆角卡片、16:9 空间实景封面、师大蓝胶囊按钮，以官网亮蓝与鎏金作交互点缀；
 - 所有业务数据来自后端接口，无写死业务数据；
 - 登录页必须选择学院，`/auth/login` 校验账号学院与所选学院一致；
 - 公开页在未登录时返回全部学院，登录后由服务端按 `college_id` 过滤；游客与登录态共用 `@PublicAccess` 可选鉴权。

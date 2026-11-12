@@ -99,7 +99,7 @@ function directionTags(lab) {
         </div>
         <div class="mentor-mini-grid">
           <div v-for="mentor in lab.mentors || []" :key="mentor.id" class="mentor-mini" style="cursor: default">
-            <span class="mentor-avatar" :style="{ backgroundColor: lab.collegeAccent || '#3f3f46' }">{{ mentor.name.slice(0, 1) }}</span>
+            <span class="mentor-avatar" :style="{ backgroundColor: lab.collegeAccent || '#294a72' }">{{ mentor.name.slice(0, 1) }}</span>
             <span class="mentor-mini-body">
               <strong>{{ mentor.name }} <span>{{ mentor.title }}</span></strong>
               <em>招录 {{ mentor.quota }} 人 · {{ mentor.applicantCount || 0 }} 报</em>

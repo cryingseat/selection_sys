@@ -79,13 +79,13 @@ async function submit() {
       <router-link to="/" class="brand">
         <span class="brand-mark">选</span>
         <span class="brand-text">
-          <strong>实训室进组选拔系统</strong>
-          <span>OPEN STUDIO</span>
+          <strong>河北师范大学</strong>
+          <span>HEBEI NORMAL UNIVERSITY</span>
         </span>
       </router-link>
 
       <div>
-        <div class="hero-badge"><Icon name="spark" :size="14" /> 全校实训室与导师空间画廊</div>
+        <div class="hero-badge"><Icon name="spark" :size="14" /> 河北师范大学 · 全校实训室与导师空间画廊</div>
         <h1>让每一次<br />双向选择都有据可循</h1>
         <p>从集中宣讲、平行意向、统一面试，到拟录取确认、分轮补录、统筹调剂与结果公示，全流程线上留痕。</p>
         <div class="login-points">
