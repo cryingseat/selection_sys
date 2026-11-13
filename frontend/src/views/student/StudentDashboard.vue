@@ -46,8 +46,6 @@ const completedInterviews = computed(() => interviews.value.filter((item) => ite
 async function load() {
   loading.value = true
   try {
-    // 进入“拟录取确认”阶段后，触发一次唯一拟录取自动确认
-    await studentApi.offers().catch(() => null)
     data.value = await studentApi.dashboard()
   } catch (err) {
     notify(err.message, 'error')

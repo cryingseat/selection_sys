@@ -63,7 +63,7 @@ async function submitDecision() {
 </script>
 
 <template>
-  <PageHeader title="拟录取确认" desc="只收到 1 个拟录取意向时系统自动确认；收到多个时须自主选择唯一去向。">
+  <PageHeader title="拟录取确认" desc="收到 1 个或多个拟录取意向时，均须由你自主选择唯一去向（也可全部放弃）。">
     <template #actions>
       <StatusPill :value="batch.status" :map="batchStatus" />
       <router-link to="/student/result" class="btn btn-ghost">查看最终结果</router-link>

@@ -197,7 +197,7 @@ async function changeStage() {
       </div>
       <div class="notice notice--warn">
         <Icon name="alert" :size="16" />
-        <span>进入「拟录取确认」阶段会自动确认唯一拟录取；进入「分轮补录」会自动准备第一轮；进入「结果公示」会尝试生成公示草稿。</span>
+        <span>进入「分轮补录」会自动准备第一轮；进入「结果公示」会尝试生成公示草稿。</span>
       </div>
     </div>
     <template #footer>

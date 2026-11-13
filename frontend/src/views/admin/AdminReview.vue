@@ -24,7 +24,6 @@ const issues = computed(() => review.value.issues || [])
 const labs = computed(() => detail.value?.labs || [])
 const mentors = computed(() => detail.value?.mentors || [])
 const offers = computed(() => (detail.value?.offers || []).filter((offer) => ['OFFERED', 'CONFIRMED'].includes(offer.status)))
-const canAutoConfirm = computed(() => batch.value.status === 'CONFIRM')
 const canExpire = computed(() => ['CONFIRM', 'SUPPLEMENT'].includes(batch.value.status))
 
 async function boot() {
@@ -56,20 +55,6 @@ async function onSelect() {
     notify(err.message, 'error')
   } finally {
     loading.value = false
-  }
-}
-
-async function autoConfirm() {
-  if (!selectedId.value) return
-  actionLoading.value = true
-  try {
-    const result = await adminApi.autoConfirm(selectedId.value)
-    notify(`自动确认完成，共 ${result.count} 人`, 'success')
-    await loadDetail()
-  } catch (err) {
-    notify(err.message, 'error')
-  } finally {
-    actionLoading.value = false
   }
 }
 
@@ -157,13 +142,10 @@ async function expireOffers() {
         <section class="card card-pad">
           <div class="section-title">审核操作</div>
           <div class="stack mt-12" style="gap: 8px">
-            <button class="btn btn-soft btn-block" type="button" :disabled="actionLoading || !canAutoConfirm" @click="autoConfirm">
-              <Icon name="check" :size="15" /> 自动确认唯一拟录取
-            </button>
             <button class="btn btn-orange btn-block" type="button" :disabled="actionLoading || !canExpire" @click="expireModal.open = true">
               <Icon name="clock" :size="15" /> 处理逾期未确认
             </button>
-            <div class="tiny muted">自动确认仅在“拟录取确认”阶段可用；逾期处理在确认/补录阶段可用。</div>
+            <div class="tiny muted">逾期处理在确认/补录阶段可用。</div>
             <button class="btn btn-ghost btn-block" type="button" :disabled="actionLoading" @click="loadDetail">刷新数据</button>
           </div>
         </section>

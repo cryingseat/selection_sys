@@ -55,7 +55,6 @@ export const adminApi = {
   updateBatch: (id, payload) => client.put(`/admin/batches/${id}`, payload),
   changeStage: (id, payload) => client.post(`/admin/batches/${id}/stage`, payload),
   review: (batchId) => client.get('/admin/review', { params: { batchId } }),
-  autoConfirm: (batchId) => client.post('/admin/review/auto-confirm', null, { params: { batchId } }),
   expireOffers: (batchId, reason) => client.post('/admin/review/expire-offers', null, { params: { batchId, reason } }),
   applications: (params) => client.get('/admin/applications', { params }),
   application: (id) => client.get(`/admin/applications/${id}`),

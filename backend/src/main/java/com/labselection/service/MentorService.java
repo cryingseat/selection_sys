@@ -32,6 +32,7 @@ import com.labselection.mapper.MentorMapper;
 import com.labselection.mapper.OfferMapper;
 import com.labselection.mapper.SupplementMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -145,6 +146,9 @@ public class MentorService {
         Application application = applicationMapper.findById(applicationId);
         if (application == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "报名记录不存在");
+        }
+        if (!Objects.equals(application.getBatchId(), batch.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "不能查看其他批次的报名");
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -302,8 +306,12 @@ public class MentorService {
                 if (duplicatedRank) {
                     throw new BusinessException(ErrorCode.PARAM_ERROR, "该候补顺位已被占用，请调整");
                 }
-                intentMapper.updateDecision(intent.getId(), IntentStatus.WAITLISTED.name(),
-                        request.waitlistRank(), request.comment(), AuthContext.userId(), LocalDateTime.now());
+                try {
+                    intentMapper.updateDecision(intent.getId(), IntentStatus.WAITLISTED.name(),
+                            request.waitlistRank(), request.comment(), AuthContext.userId(), LocalDateTime.now());
+                } catch (DuplicateKeyException ex) {
+                    throw new BusinessException(ErrorCode.PARAM_ERROR, "该候补顺位已被占用，请调整");
+                }
                 auditService.log(batch.getId(), "DECISION_WAITLIST", "INTENT", intent.getId(),
                         "学生 " + intent.getStudentName() + " 列入候补，顺位 " + request.waitlistRank(),
                         request.reason());
@@ -376,8 +384,12 @@ public class MentorService {
                 if (request.waitlistRank() == null || request.waitlistRank() <= 0) {
                     throw new BusinessException(ErrorCode.PARAM_ERROR, "候补必须填写大于 0 的顺位");
                 }
-                supplementMapper.updateIntentStatus(intent.getId(), SupplementIntentStatus.WAITLISTED.name(),
-                        request.waitlistRank(), request.comment(), AuthContext.userId(), LocalDateTime.now());
+                try {
+                    supplementMapper.updateIntentStatus(intent.getId(), SupplementIntentStatus.WAITLISTED.name(),
+                            request.waitlistRank(), request.comment(), AuthContext.userId(), LocalDateTime.now());
+                } catch (DuplicateKeyException ex) {
+                    throw new BusinessException(ErrorCode.PARAM_ERROR, "该候补顺位已被占用，请调整");
+                }
                 auditService.log(batch.getId(), "SUPPLEMENT_WAITLIST", "SUPPLEMENT_INTENT", intent.getId(),
                         "补录学生 " + intent.getStudentName() + " 列入候补，顺位 " + request.waitlistRank(),
                         request.reason());

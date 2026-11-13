@@ -105,12 +105,6 @@ public class AdminController {
         return ApiResponse.ok(adminService.review(id));
     }
 
-    @PostMapping("/review/auto-confirm")
-    public ApiResponse<Map<String, Object>> autoConfirm(@RequestParam Long batchId) {
-        int count = adminService.autoConfirm(batchId);
-        return ApiResponse.message("唯一拟录取自动确认完成", Map.of("count", count));
-    }
-
     @PostMapping("/review/expire-offers")
     public ApiResponse<Map<String, Object>> expireOffers(@RequestParam Long batchId,
                                                          @RequestParam(required = false) String reason) {

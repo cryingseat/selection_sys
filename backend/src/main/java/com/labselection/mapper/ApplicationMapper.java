@@ -46,4 +46,6 @@ public interface ApplicationMapper {
     long countByBatch(@Param("batchId") Long batchId);
 
     long countSubmittedByBatch(@Param("batchId") Long batchId);
+
+    int lockSubmittedByBatch(@Param("batchId") Long batchId);
 }

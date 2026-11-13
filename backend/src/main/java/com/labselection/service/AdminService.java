@@ -65,6 +65,19 @@ public class AdminService {
     private final AuditMapper auditMapper;
     private final AuditService auditService;
 
+    /** 阶段迁移白名单：只允许单向推进，且每步只能进入相邻的下一阶段（DRAFT 可跳过宣讲直接开放填报）。 */
+    private static final Map<BatchStatus, Set<BatchStatus>> ALLOWED_TRANSITIONS = Map.of(
+            BatchStatus.DRAFT, Set.of(BatchStatus.ANNOUNCED, BatchStatus.INTENT_OPEN),
+            BatchStatus.ANNOUNCED, Set.of(BatchStatus.INTENT_OPEN),
+            BatchStatus.INTENT_OPEN, Set.of(BatchStatus.INTENT_CLOSED),
+            BatchStatus.INTENT_CLOSED, Set.of(BatchStatus.INTERVIEW),
+            BatchStatus.INTERVIEW, Set.of(BatchStatus.CONFIRM),
+            BatchStatus.CONFIRM, Set.of(BatchStatus.SUPPLEMENT),
+            BatchStatus.SUPPLEMENT, Set.of(BatchStatus.ADJUSTMENT),
+            BatchStatus.ADJUSTMENT, Set.of(BatchStatus.PUBLICITY),
+            BatchStatus.PUBLICITY, Set.of(BatchStatus.FINISHED),
+            BatchStatus.FINISHED, Set.of());
+
     public Map<String, Object> dashboard() {
         SelectionBatch batch = stageGuard.current();
         Long collegeId = currentCollegeId();
@@ -194,6 +207,11 @@ public class AdminService {
         if (target == batch.getStatus()) {
             throw new BusinessException(ErrorCode.STATE_INVALID, "当前已处于该阶段");
         }
+        Set<BatchStatus> allowed = ALLOWED_TRANSITIONS.getOrDefault(batch.getStatus(), Set.of());
+        if (!allowed.contains(target)) {
+            throw new BusinessException(ErrorCode.STAGE_NOT_ALLOWED,
+                    "不允许从「" + batch.getStatus().getLabel() + "」直接切换到「" + target.getLabel() + "」");
+        }
         Publicity publicity = publicityMapper.findCurrentByBatch(id);
         if (publicity != null
                 && (publicity.getStatus() == PublicityStatus.PUBLISHED
@@ -206,9 +224,9 @@ public class AdminService {
         batchMapper.updateStatus(id, target.name());
         SelectionBatch updated = batchMapper.findById(id);
         String extra = "";
-        if (target == BatchStatus.CONFIRM) {
-            int auto = selectionService.autoConfirmSingleOffers(id);
-            extra = "，自动确认唯一拟录取 " + auto + " 人";
+        if (target == BatchStatus.INTENT_CLOSED) {
+            int locked = applicationMapper.lockSubmittedByBatch(id);
+            extra = "，已锁定已提交报名 " + locked + " 份";
         } else if (target == BatchStatus.SUPPLEMENT) {
             supplementService.ensureFirstRound(id);
             extra = "，已准备第一轮补录";
@@ -309,11 +327,6 @@ public class AdminService {
         summary.put("admittedCount", admitted);
         summary.put("issues", issues);
         return summary;
-    }
-
-    @Transactional
-    public int autoConfirm(Long batchId) {
-        return selectionService.autoConfirmSingleOffers(batchId);
     }
 
     @Transactional

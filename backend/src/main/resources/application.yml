@@ -41,9 +41,8 @@ mybatis:
 app:
   # 登录令牌有效期（小时）
   token-ttl-hours: 12
-  # 生产环境建议设为 true：除流程阶段外，还会严格校验各阶段起止时间。
-  # 演示环境设为 false，便于管理员手动推进阶段完整走通流程。
-  enforce-time-window: false
+  # 严格校验各阶段起止时间；逾期自动放弃、补录轮次到期关闭均依赖此开关。
+  enforce-time-window: true
   demo-mode: true
   cors-origins: http://localhost:5173,http://127.0.0.1:5173
 

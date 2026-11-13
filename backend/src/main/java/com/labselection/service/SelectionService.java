@@ -19,6 +19,7 @@ import com.labselection.domain.enums.IntentStatus;
 import com.labselection.domain.enums.OfferSource;
 import com.labselection.domain.enums.OfferStatus;
 import com.labselection.domain.enums.SupplementIntentStatus;
+import com.labselection.domain.enums.SupplementStatus;
 import com.labselection.mapper.ApplicationMapper;
 import com.labselection.mapper.AssignmentMapper;
 import com.labselection.mapper.IntentMapper;
@@ -99,7 +100,11 @@ public class SelectionService {
         offer.setStatus(OfferStatus.OFFERED);
         offer.setRoundNo(roundNo);
         offer.setCreatedBy(AuthContext.userId());
-        offerMapper.insert(offer);
+        try {
+            offerMapper.insert(offer);
+        } catch (DuplicateKeyException ex) {
+            throw new BusinessException(ErrorCode.STATE_INVALID, "该意向已发放拟录取，请勿重复操作");
+        }
 
         intentMapper.updateDecision(intent.getId(), IntentStatus.OFFERED.name(), null,
                 intent.getComment(), AuthContext.userId(), LocalDateTime.now());
@@ -136,7 +141,11 @@ public class SelectionService {
         offer.setStatus(OfferStatus.OFFERED);
         offer.setRoundNo(roundNo);
         offer.setCreatedBy(AuthContext.userId());
-        offerMapper.insert(offer);
+        try {
+            offerMapper.insert(offer);
+        } catch (DuplicateKeyException ex) {
+            throw new BusinessException(ErrorCode.STATE_INVALID, "该补录意向已发放拟录取，请勿重复操作");
+        }
         supplementMapper.updateIntentStatus(intent.getId(), SupplementIntentStatus.OFFERED.name(),
                 null, intent.getComment(), AuthContext.userId(), LocalDateTime.now());
         auditService.log(intent.getBatchId(), "SUPPLEMENT_OFFER_CREATE", "OFFER", offer.getId(),
@@ -165,6 +174,9 @@ public class SelectionService {
             SupplementRound round = supplementMapper.findRoundByBatchAndNo(
                     offer.getBatchId(), offer.getRoundNo());
             if (round != null) {
+                if (round.getStatus() != SupplementStatus.OPEN) {
+                    throw new BusinessException(ErrorCode.SUPPLEMENT_CLOSED, "该补录轮次已结束，不能确认");
+                }
                 stageGuard.assertWindow(round.getStartAt(), round.getEndAt(), "补录确认");
             }
         }
@@ -274,61 +286,20 @@ public class SelectionService {
         SelectionBatch batch = stageGuard.current();
         stageGuard.assertStage(batch, BatchStatus.CONFIRM, BatchStatus.SUPPLEMENT);
         stageGuard.assertNotLocked(batch.getId());
+        Integer openRoundNo = null;
+        if (batch.getStatus() == BatchStatus.SUPPLEMENT) {
+            SupplementRound open = supplementMapper.findOpenRound(batch.getId());
+            openRoundNo = open == null ? null : open.getRoundNo();
+        }
         List<Offer> offers = offerMapper.findByStudent(batch.getId(), studentId).stream()
                 .filter(o -> o.getStatus() == OfferStatus.OFFERED)
+                .filter(o -> batch.getStatus() == BatchStatus.CONFIRM
+                        || Objects.equals(o.getRoundNo(), openRoundNo))
                 .toList();
         for (Offer offer : offers) {
             declineOffer(offer.getId(), studentId, reason);
         }
         return offers.size();
-    }
-
-    @Transactional
-    public int autoConfirmSingleOffers(Long batchId) {
-        SelectionBatch batch = stageGuard.require(batchId);
-        stageGuard.assertStage(batch, BatchStatus.CONFIRM);
-        stageGuard.assertNotLocked(batchId);
-        List<Offer> offered = offerMapper.findByBatch(batchId, OfferStatus.OFFERED.name());
-        Map<Long, List<Offer>> byStudent = offered.stream()
-                .collect(Collectors.groupingBy(Offer::getStudentId, LinkedHashMap::new, Collectors.toList()));
-        int count = 0;
-        for (Map.Entry<Long, List<Offer>> entry : byStudent.entrySet()) {
-            List<Offer> list = entry.getValue();
-            if (list.size() == 1) {
-                Offer only = list.get(0);
-                if (assignmentMapper.findByStudentAndBatch(batchId, entry.getKey()) == null) {
-                    // 内部调用，直接执行确认；自动确认不受“学生主动确认”时间窗限制
-                    Offer locked = offerMapper.lockById(only.getId());
-                    if (locked != null && locked.getStatus() == OfferStatus.OFFERED) {
-                        insertAutoAssignment(locked);
-                        count++;
-                    }
-                }
-            }
-        }
-        return count;
-    }
-
-    private void insertAutoAssignment(Offer offer) {
-        FinalAssignment assignment = new FinalAssignment();
-        assignment.setBatchId(offer.getBatchId());
-        assignment.setStudentId(offer.getStudentId());
-        assignment.setApplicationId(offer.getApplicationId());
-        assignment.setMentorId(offer.getMentorId());
-        assignment.setLabId(offer.getLabId());
-        assignment.setSource(AssignmentSource.CONFIRM);
-        assignment.setStatus(AssignmentStatus.CONFIRMED);
-        assignment.setConfirmedAt(LocalDateTime.now());
-        assignment.setRemark("唯一拟录取意向，系统自动确认");
-        try {
-            assignmentMapper.insert(assignment);
-        } catch (DuplicateKeyException ex) {
-            return;
-        }
-        offerMapper.updateStatus(offer.getId(), OfferStatus.CONFIRMED.name(), LocalDateTime.now());
-        releaseOtherOffers(offer, offer.getStudentId());
-        auditService.log(offer.getBatchId(), "OFFER_AUTO_CONFIRM", "ASSIGNMENT", assignment.getId(),
-                "唯一拟录取意向自动确认", "规则：仅收到 1 个拟录取意向自动确认");
     }
 
     @Transactional

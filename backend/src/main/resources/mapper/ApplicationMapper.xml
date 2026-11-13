@@ -130,4 +130,10 @@
         SELECT COUNT(*) FROM application
         WHERE batch_id = #{batchId} AND status IN ('SUBMITTED', 'LOCKED')
     </select>
+
+    <update id="lockSubmittedByBatch">
+        UPDATE application
+        SET status = 'LOCKED', version = version + 1
+        WHERE batch_id = #{batchId} AND status = 'SUBMITTED'
+    </update>
 </mapper>

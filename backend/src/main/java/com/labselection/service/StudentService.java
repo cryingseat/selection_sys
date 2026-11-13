@@ -254,9 +254,6 @@ public class StudentService {
     public List<Offer> offers() {
         Student student = currentStudent();
         SelectionBatch batch = stageGuard.current();
-        if (batch.getStatus() == BatchStatus.CONFIRM) {
-            selectionService.autoConfirmSingleOffers(batch.getId());
-        }
         return offerMapper.findByStudent(batch.getId(), student.getId());
     }
 
@@ -364,7 +361,11 @@ public class StudentService {
                 throw new BusinessException(ErrorCode.PARAM_ERROR, "所选导师不存在或已停用");
             }
             Lab lab = labMapper.findById(mentor.getLabId());
-            if (lab == null || !Objects.equals(lab.getCollegeId(), student.getCollegeId())) {
+            if (lab == null || lab.getStatus() != LabStatus.ACTIVE) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR,
+                        "导师「" + mentor.getName() + "」所属实训室已停用");
+            }
+            if (!Objects.equals(lab.getCollegeId(), student.getCollegeId())) {
                 throw new BusinessException(ErrorCode.PARAM_ERROR, "只能选择本学院实训室的导师");
             }
         }
