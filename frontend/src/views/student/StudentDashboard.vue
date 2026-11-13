@@ -113,7 +113,7 @@ async function declineAll() {
   <div v-if="loading" class="card card-pad"><div class="loading-block"><div class="spinner" />正在加载你的选拔进度…</div></div>
 
   <template v-else-if="data">
-    <section class="card card-pad" style="background: linear-gradient(120deg, #f8fbff, #fff 55%, #f3f8fe)">
+    <section class="card card-pad" style="background: linear-gradient(120deg, #fbf9f8, #fff 55%, #f7f0f1)">
       <div class="flex flex-wrap" style="justify-content: space-between; gap: 18px">
         <div style="min-width: 0">
           <div class="flex flex-wrap">
@@ -137,8 +137,8 @@ async function declineAll() {
     </section>
 
     <div class="stat-grid">
-      <StatCard label="报名状态" :value="resolveMeta(applicationStatus, application?.status || 'DRAFT').label" :hint="application ? `${(application.intents || []).length} 个平行意向` : '尚未填报'" tint="#eaf2fc" />
-      <StatCard label="面试考核" :value="completedInterviews.length ? `${completedInterviews.length} 场已完成` : pendingInterviews.length ? `${pendingInterviews.length} 场待参加` : '待安排'" hint="以实训室通知为准" tint="#f3f8fe" />
+      <StatCard label="报名状态" :value="resolveMeta(applicationStatus, application?.status || 'DRAFT').label" :hint="application ? `${(application.intents || []).length} 个平行意向` : '尚未填报'" tint="#f8edf1" />
+      <StatCard label="面试考核" :value="completedInterviews.length ? `${completedInterviews.length} 场已完成` : pendingInterviews.length ? `${pendingInterviews.length} 场待参加` : '待安排'" hint="以实训室通知为准" tint="#f7f0f1" />
       <StatCard label="拟录取" :value="offers.length" hint="可同时获得多个意向，只能确认一个" tint="#fff4e2" />
       <StatCard label="最终去向" :value="assignment ? assignment.labName : '待定'" :hint="assignment ? `${assignment.mentorName} · ${resolveMeta(assignmentSource, assignment.source).label}` : '公示后确定'" tint="#e8f7f1" />
     </div>

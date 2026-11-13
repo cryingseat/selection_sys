@@ -93,8 +93,8 @@ async function toggle(lab) {
   </PageHeader>
 
   <div class="stat-grid">
-    <StatCard label="实训室" :value="labs.length" :hint="`启用 ${activeCount} 个`" tint="#eaf2fc" />
-    <StatCard label="总名额" :value="totalQuota" hint="全部实训室" tint="#f3f8fe" />
+    <StatCard label="实训室" :value="labs.length" :hint="`启用 ${activeCount} 个`" tint="#f8edf1" />
+    <StatCard label="总名额" :value="totalQuota" hint="全部实训室" tint="#f7f0f1" />
     <StatCard label="导师总数" :value="labs.reduce((sum, lab) => sum + (lab.mentorCount || 0), 0)" hint="各实训室合计" tint="#fff4e2" />
     <StatCard label="已录取" :value="labs.reduce((sum, lab) => sum + (lab.confirmedCount || 0), 0)" hint="当前批次" tint="#e8f7f1" />
   </div>

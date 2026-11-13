@@ -110,7 +110,7 @@ function directionTags(lab) {
 }
 
 function tagTint(index) {
-  const colors = ['#eaf2fc', '#f1f6fd', '#fff6e4', '#e8f0fa']
+  const colors = ['#f8edf1', '#eef4e7', '#fbf3e2', '#f2e7ea']
   return colors[index % colors.length]
 }
 </script>

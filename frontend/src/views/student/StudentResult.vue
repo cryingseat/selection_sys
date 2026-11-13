@@ -52,7 +52,7 @@ onMounted(load)
   <div v-if="loading" class="card card-pad"><div class="loading-block"><div class="spinner" />正在加载结果…</div></div>
 
   <template v-else-if="result">
-    <section v-if="assignment" class="card card-pad" style="background: linear-gradient(120deg, #edf9f4, #fff 60%, #f3f8fe)">
+    <section v-if="assignment" class="card card-pad" style="background: linear-gradient(120deg, #edf9f4, #fff 60%, #f7f0f1)">
       <div class="flex flex-wrap" style="justify-content: space-between; gap: 18px">
         <div>
           <div class="pill pill--green"><span class="dot" />正式录取</div>

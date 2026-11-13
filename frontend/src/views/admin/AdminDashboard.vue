@@ -78,7 +78,7 @@ async function changeStage() {
   <div v-if="loading" class="card card-pad"><div class="loading-block"><div class="spinner" />正在加载学院总览…</div></div>
 
   <template v-else-if="data">
-    <section class="card card-pad" style="background: linear-gradient(120deg, #f8fbff, #fff 55%, #f3f8fe)">
+    <section class="card card-pad" style="background: linear-gradient(120deg, #fbf9f8, #fff 55%, #f7f0f1)">
       <div class="flex flex-wrap" style="justify-content: space-between; gap: 18px">
         <div>
           <div class="flex flex-wrap">
@@ -98,8 +98,8 @@ async function changeStage() {
     </section>
 
     <div class="stat-grid">
-      <StatCard label="参与学生" :value="stats.studentCount" hint="学生库总人数" tint="#eaf2fc" />
-      <StatCard label="报名人数" :value="stats.applicationCount" hint="已提交报名" tint="#f3f8fe" />
+      <StatCard label="参与学生" :value="stats.studentCount" hint="学生库总人数" tint="#f8edf1" />
+      <StatCard label="报名人数" :value="stats.applicationCount" hint="已提交报名" tint="#f7f0f1" />
       <StatCard label="待初选" :value="stats.pendingDecisions" hint="导师尚未给出结论" tint="#fff4e2" />
       <StatCard label="最终录取" :value="stats.admittedCount" :hint="`待确认拟录取 ${stats.pendingOffers} 条`" tint="#e8f7f1" />
     </div>
