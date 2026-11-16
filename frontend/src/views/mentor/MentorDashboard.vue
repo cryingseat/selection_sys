@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { mentorApi } from '../../api'
 import { notify } from '../../composables/useToast'
 import { batchStatus, offerSource, offerStatus, meta as resolveMeta } from '../../utils/labels'
@@ -10,7 +11,9 @@ import StatCard from '../../components/StatCard.vue'
 import StepFlow from '../../components/StepFlow.vue'
 import StatusPill from '../../components/StatusPill.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import ActionGuide from '../../components/ActionGuide.vue'
 
+const router = useRouter()
 const loading = ref(true)
 const data = ref(null)
 const offers = ref([])
@@ -30,6 +33,7 @@ async function load() {
     const [dashboard, offerList] = await Promise.all([mentorApi.dashboard(), mentorApi.offers()])
     data.value = dashboard
     offers.value = offerList
+    maybeShowGuide()
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -38,6 +42,34 @@ async function load() {
 }
 
 onMounted(load)
+
+const guideOpen = ref(false)
+const guide = computed(() => {
+  if (!data.value) return null
+  const b = batch.value.status
+  const p = stats.value.pendingCount || 0
+
+  if (p > 0) {
+    return { key: 'pending', stage: '待处理报名', title: `有 ${p} 名学生的意向待你处理`, desc: '查看报名学生，完成面试考核并给出初选结论。', actionLabel: '去处理报名', target: '/mentor/applicants' }
+  }
+  if (b === 'INTERVIEW') {
+    return { key: 'interview', stage: '面试与初选', title: '当前为面试考核阶段', desc: '为已报名的学生安排并完成面试，记录评分与结论。', actionLabel: '去面试考核', target: '/mentor/interviews' }
+  }
+  if (b === 'CONFIRM' || b === 'SUPPLEMENT') {
+    return { key: 'confirm', stage: '确认 / 补录', title: '关注学生确认与补录进展', desc: '查看拟录取确认情况，处理候补与补录意向。', actionLabel: '查看我的学生', target: '/mentor/students' }
+  }
+  return null
+})
+
+function maybeShowGuide() {
+  // 只要存在未完成的关键动作，每次进入工作台都再次弹窗提醒
+  if (guide.value) guideOpen.value = true
+}
+
+function onGuideGo() {
+  guideOpen.value = false
+  if (guide.value?.target) router.push(guide.value.target)
+}
 </script>
 
 <template>
@@ -139,4 +171,16 @@ onMounted(load)
       </div>
     </div>
   </template>
+
+  <ActionGuide
+    v-if="guide"
+    :open="guideOpen"
+    :stage="guide.stage"
+    :title="guide.title"
+    :desc="guide.desc"
+    :action-label="guide.actionLabel"
+    :target="guide.target"
+    @close="guideOpen = false"
+    @go="onGuideGo"
+  />
 </template>

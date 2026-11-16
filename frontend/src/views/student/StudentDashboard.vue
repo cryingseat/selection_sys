@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { studentApi } from '../../api'
 import { notify } from '../../composables/useToast'
 import {
@@ -22,7 +23,9 @@ import StepFlow from '../../components/StepFlow.vue'
 import StatusPill from '../../components/StatusPill.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import ModalDialog from '../../components/ModalDialog.vue'
+import ActionGuide from '../../components/ActionGuide.vue'
 
+const router = useRouter()
 const loading = ref(true)
 const data = ref(null)
 const actionLoading = ref(false)
@@ -47,6 +50,7 @@ async function load() {
   loading.value = true
   try {
     data.value = await studentApi.dashboard()
+    maybeShowGuide()
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -55,6 +59,42 @@ async function load() {
 }
 
 onMounted(load)
+
+const guideOpen = ref(false)
+const guide = computed(() => {
+  if (!data.value) return null
+  const b = batch.value.status
+  const app = application.value
+  const hasActive = activeOffers.value.length > 0
+  const sr = supplementRound.value
+
+  if (assignment.value) {
+    return { key: 'assigned', stage: '已完成', title: '你已确定最终去向', desc: `已确认进入「${assignment.value.labName}」，可查看入组说明。`, actionLabel: '查看结果', target: '/student/result' }
+  }
+  if (b === 'INTENT_OPEN' && (!app || app.status === 'WITHDRAWN' || app.status === 'DRAFT')) {
+    return { key: 'intent', stage: '意向填报', title: '当前为意向填报阶段', desc: '选择最多 3 位导师，表达你的真实兴趣，提交后等待面试安排。', actionLabel: '去填报意向', target: '/student/application' }
+  }
+  if (b === 'CONFIRM' && hasActive) {
+    return { key: 'confirm', stage: '拟录取确认', title: `你有 ${activeOffers.value.length} 个拟录取待确认`, desc: '只能确认一个去向，请尽快做出选择，逾期视为放弃。', actionLabel: '去确认拟录取', target: '/student/offers' }
+  }
+  if (sr && sr.status === 'OPEN') {
+    return { key: 'supplement', stage: '分轮补录', title: '补录填报进行中', desc: `截止 ${fmt(sr.endAt)}，可重新填报最多 3 个补录意向。`, actionLabel: '去补录填报', target: '/student/supplement' }
+  }
+  if (b === 'PUBLICITY') {
+    return { key: 'publicity', stage: '结果公示', title: '最终名单公示中', desc: '查看你的最终去向与入组说明。', actionLabel: '查看公示结果', target: '/student/result' }
+  }
+  return null
+})
+
+function maybeShowGuide() {
+  // 只要存在未完成的关键动作，每次进入工作台都再次弹窗提醒
+  if (guide.value) guideOpen.value = true
+}
+
+function onGuideGo() {
+  guideOpen.value = false
+  if (guide.value?.target) router.push(guide.value.target)
+}
 
 function openDecision(offer, mode) {
   decision.offer = offer
@@ -234,8 +274,8 @@ async function declineAll() {
           </div>
 
           <div v-if="activeOffers.length" class="stack">
-            <div v-if="activeOffers.length > 1" class="notice notice--warn">
-              <Icon name="alert" :size="15" />
+            <div v-if="activeOffers.length > 1" class="notice notice--warn notice--strong">
+              <Icon name="alert" :size="18" />
               <span>你收到多个拟录取意向，请于 {{ fmt(batch.confirmEnd) }} 前选择唯一去向；逾期未确认视为全部放弃。</span>
             </div>
             <div v-for="offer in activeOffers" :key="offer.id" class="offer-card highlight">
@@ -341,4 +381,16 @@ async function declineAll() {
       </button>
     </template>
   </ModalDialog>
+
+  <ActionGuide
+    v-if="guide"
+    :open="guideOpen"
+    :stage="guide.stage"
+    :title="guide.title"
+    :desc="guide.desc"
+    :action-label="guide.actionLabel"
+    :target="guide.target"
+    @close="guideOpen = false"
+    @go="onGuideGo"
+  />
 </template>

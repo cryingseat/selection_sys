@@ -35,10 +35,10 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem(TOKEN_KEY, token)
       localStorage.setItem(USER_KEY, JSON.stringify(user))
     },
-    async login(account, password, collegeId) {
+    async login(account, password) {
       this.loading = true
       try {
-        const data = await authApi.login({ account, password, collegeId })
+        const data = await authApi.login({ account, password })
         this.setSession(data.token, data.user)
         return data.user
       } finally {

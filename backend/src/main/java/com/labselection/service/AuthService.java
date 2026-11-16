@@ -40,12 +40,8 @@ public class AuthService {
         if (!Boolean.TRUE.equals(user.getEnabled())) {
             throw new BusinessException(ErrorCode.ACCOUNT_DISABLED);
         }
-        College college = collegeMapper.findById(request.collegeId());
-        if (college == null) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, "所选学院不存在");
-        }
-        if (user.getCollegeId() == null || !user.getCollegeId().equals(college.getId())) {
-            throw new BusinessException(ErrorCode.COLLEGE_MISMATCH);
+        if (user.getCollegeId() == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "账号未关联学院，请联系管理员");
         }
         String token = tokenService.createToken(user);
         UserInfo info = buildUserInfo(user);

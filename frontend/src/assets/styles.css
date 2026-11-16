@@ -61,6 +61,45 @@ body {
 }
 a { color: var(--ink); text-decoration: none; }
 a:hover { color: var(--secondary); }
+
+/* 毛笔楷书品牌字：马善政毛笔楷书（清晰易认）+ 志莽行书 / 华文行楷兜底 */
+.calligraphy {
+  font-family: "Ma Shan Zheng", "STXingkai", "华文行楷", "Zhi Mang Xing", "KaiTi", "楷体", var(--serif);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+.calligraphy-ink {
+  background: linear-gradient(135deg, #241a1d 18%, #4a3438 58%, #7a5a50 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #241a1d;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35));
+}
+.calligraphy-light {
+  background: linear-gradient(160deg, #ffffff 30%, #f4e3c2 76%, #e3c98f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #fdfaf6;
+  filter: drop-shadow(0 2px 10px rgba(20, 10, 14, 0.6));
+}
+/* 落款式金线：主字与副标题之间 */
+.calligraphy-rule {
+  display: block;
+  width: 30px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--gold), rgba(216, 178, 115, 0));
+}
+.brand-note {
+  font-family: var(--serif);
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0.42em;
+  color: var(--gold-deep);
+}
+.brand-note--light { color: rgba(216, 178, 115, 0.95); }
 button, input, select, textarea { font-family: inherit; font-size: inherit; }
 h1, h2, h3, h4, p { margin: 0; }
 h1, h2 { font-family: var(--serif); font-weight: 600; letter-spacing: 0; }
@@ -99,6 +138,11 @@ ul { margin: 0; padding-left: 18px; }
   flex: 0 0 auto;
 }
 .brand-text strong { display: block; font-family: var(--serif); font-size: 16px; letter-spacing: 0.01em; color: var(--ink); }
+.brand-text strong.calligraphy { font-family: "Ma Shan Zheng", "STXingkai", "华文行楷", "Zhi Mang Xing", "KaiTi", "楷体", var(--serif); font-weight: 400; font-size: 26px; line-height: 1.15; letter-spacing: 0.06em; }
+.brand-text strong.calligraphy + span { font-size: 13px; letter-spacing: 0.22em; margin-top: 3px; color: var(--ink-2); }
+.brand-text .calligraphy-rule { margin: 6px 0 5px; }
+.login-brand .calligraphy-rule { margin: 8px 0 7px; }
+.login-brand .brand-note { display: block; margin-top: 9px; }
 .brand-text span { display: block; font-size: 10px; color: var(--muted-2); letter-spacing: 0.13em; text-transform: uppercase; }
 .nav-group { display: flex; flex-direction: column; gap: 3px; }
 .nav-label { font-size: 10px; letter-spacing: 0.16em; color: var(--muted-2); padding: 11px 12px 4px; text-transform: uppercase; }
@@ -334,11 +378,19 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .quota-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), var(--secondary) 78%, var(--gold)); }
 .offer-card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
 .offer-card.highlight { border-color: #dcbcc7; background: linear-gradient(180deg, #fcf8f7, #fff); box-shadow: 0 8px 24px rgba(120, 55, 75, 0.1); }
-.notice { border-radius: 12px; padding: 12px 14px; font-size: 12px; border: 1px solid; display: flex; gap: 9px; align-items: flex-start; line-height: 1.65; }
+.notice { border-radius: 12px; padding: 13px 14px; font-size: 13px; font-weight: 500; border: 1px solid; display: flex; gap: 9px; align-items: flex-start; line-height: 1.65; position: relative; }
 .notice--info { background: var(--primary-soft); border-color: #e6d6da; color: var(--ink-2); }
-.notice--warn { background: var(--amber-soft); border-color: #eddaa6; color: #6d4a0b; }
-.notice--danger { background: var(--red-soft); border-color: #ecc8ce; color: #8b2030; }
+.notice--warn { background: var(--amber-soft); border-color: #e6c77a; color: #6d4a0b; }
+.notice--danger { background: var(--red-soft); border-color: #e6aab6; color: #8b2030; }
 .notice--success { background: var(--green-soft); border-color: #bfe3d1; color: #136c45; }
+.notice--warn, .notice--danger { padding-left: 18px; }
+.notice--warn::before, .notice--danger::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 12px 0 0 12px;
+}
+.notice--warn::before { background: var(--amber); }
+.notice--danger::before { background: var(--red); }
+.notice--strong { font-size: 14.5px; font-weight: 700; padding: 16px 18px 16px 22px; box-shadow: var(--shadow-sm); }
+.notice--strong .icon, .notice .icon { flex: 0 0 auto; color: currentColor; }
 .kv { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px 12px; font-size: 12px; }
 .kv dt { color: var(--muted-2); }
 .kv dd { margin: 0; color: var(--ink-2); font-weight: 500; }
@@ -436,8 +488,16 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 116px 32px 76px;
-  background: url("/login-bg.jpg") center / cover no-repeat fixed;
+  padding: 116px 32px 150px;
+  overflow: hidden;
+}
+.login-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(115% 85% at 50% 40%, transparent 42%, rgba(18, 9, 11, 0.58) 100%);
 }
 .login-page::before {
   content: "";
@@ -445,8 +505,8 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(24, 14, 16, 0.45) 0%, rgba(24, 14, 16, 0.12) 36%, rgba(30, 18, 18, 0.32) 100%),
-    radial-gradient(760px 420px at 50% 48%, rgba(255, 255, 255, 0.14), transparent 72%);
+    linear-gradient(180deg, rgba(16, 9, 11, 0.6) 0%, rgba(24, 14, 16, 0.1) 38%, rgba(24, 13, 15, 0.48) 100%),
+    radial-gradient(700px 380px at 50% 46%, rgba(255, 244, 224, 0.18), transparent 72%);
 }
 .login-brand {
   position: absolute;
@@ -461,15 +521,13 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
   pointer-events: none;
 }
 .login-brand strong { font-family: var(--serif); font-size: 30px; font-weight: 600; letter-spacing: 0.08em; line-height: 1.2; }
-.login-brand span { font-size: 13px; letter-spacing: 0.34em; color: rgba(255, 255, 255, 0.85); padding-left: 2px; }
+.login-brand strong.calligraphy { font-family: "Ma Shan Zheng", "STXingkai", "华文行楷", "Zhi Mang Xing", "KaiTi", "楷体", var(--serif); font-weight: 400; font-size: 44px; line-height: 1.15; letter-spacing: 0.06em; }
+.login-brand span { font-size: 15px; font-weight: 500; letter-spacing: 0.3em; color: #ffffff; text-shadow: 0 1px 10px rgba(20, 10, 14, 0.55); padding-left: 2px; }
 
 .login-card {
   position: relative;
   z-index: 2;
-  display: grid;
-  grid-template-columns: 0.94fr 1.06fr;
-  width: min(760px, 100%);
-  min-height: 460px;
+  width: min(430px, 100%);
   border-radius: 18px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -477,33 +535,35 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
   box-shadow: 0 38px 90px -46px rgba(24, 12, 14, 0.75);
 }
 .login-visual {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 2;
+  width: min(640px, calc(100% - 40px));
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 12px;
-  padding: 34px 30px;
+  gap: 9px;
+  padding: 14px 20px 15px;
+  border-radius: 14px;
   color: #fff;
-  background: linear-gradient(158deg, rgba(28, 16, 18, 0.34), rgba(58, 36, 28, 0.14));
-  border-right: 1px solid rgba(255, 255, 255, 0.24);
-  backdrop-filter: blur(2px);
+  background: linear-gradient(150deg, rgba(30, 18, 20, 0.28), rgba(58, 36, 28, 0.16));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px) saturate(1.05);
+  box-shadow: 0 12px 30px -16px rgba(20, 10, 14, 0.3);
 }
+.login-visual-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px 18px; flex-wrap: wrap; }
+.login-visual-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.login-visual-desc { font-size: 10.5px; line-height: 1.6; color: rgba(255, 255, 255, 0.62); max-width: 300px; display: none; }
+.login-demo-row { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
 .login-kicker { font-size: 10px; letter-spacing: 0.2em; color: rgba(255, 255, 255, 0.68); display: flex; align-items: center; gap: 9px; }
 .login-kicker::before { content: ""; width: 22px; height: 2px; border-radius: 2px; background: var(--gold); }
-.login-visual h1 { font-family: var(--serif); font-size: clamp(22px, 2.2vw, 28px); line-height: 1.34; font-weight: 600; color: #fff; }
-.login-visual > p { font-size: 12px; line-height: 1.7; color: rgba(255, 255, 255, 0.84); max-width: 340px; }
-.overlay-points { display: flex; flex-direction: column; gap: 8px; }
-.overlay-point { display: flex; gap: 9px; align-items: flex-start; font-size: 11.5px; color: rgba(255, 255, 255, 0.86); line-height: 1.55; }
-.overlay-point .tick {
-  width: 18px; height: 18px; border-radius: 50%; flex: 0 0 auto;
-  background: rgba(216, 178, 115, 0.18); border: 1px solid rgba(216, 178, 115, 0.42);
-  color: #f0d6a0; display: grid; place-items: center; font-size: 9px; font-weight: 700;
-}
-.login-demo-label { margin-top: 2px; font-size: 10px; letter-spacing: 0.16em; color: rgba(255, 255, 255, 0.62); }
+.login-visual h1 { font-family: var(--serif); font-size: 15px; line-height: 1.3; font-weight: 600; color: #fff; white-space: nowrap; }
+.login-demo-label { font-size: 10px; letter-spacing: 0.16em; color: rgba(255, 255, 255, 0.62); white-space: nowrap; }
 .demo-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .demo-chip {
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.09);
   color: #fff; border-radius: 999px; padding: 5px 10px;
   font-size: 10.5px; font-weight: 500; cursor: pointer;
   backdrop-filter: blur(8px);
@@ -516,10 +576,9 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
   flex-direction: column;
   justify-content: center;
   gap: 10px;
-  padding: 32px 38px;
+  padding: 30px 34px 26px;
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(22px) saturate(1.15);
-  border-left: 1px solid rgba(255, 255, 255, 0.45);
 }
 .login-panel h2 { font-family: var(--serif); font-size: 24px; color: var(--ink); }
 .login-panel h2::after { content: ""; display: block; width: 38px; height: 3px; margin-top: 9px; border-radius: 2px; background: linear-gradient(90deg, var(--gold), var(--primary)); }
@@ -676,10 +735,9 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .login-brand { top: 24px; left: 22px; }
   .login-brand strong { font-size: 22px; }
   .login-brand span { font-size: 10px; letter-spacing: 0.22em; }
-  .login-card { grid-template-columns: 1fr; min-height: 0; }
-  .login-visual { padding: 26px 24px; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.24); }
-  .login-visual h1 { font-size: 24px; }
-  .login-visual > p, .login-visual .overlay-points { display: none; }
+  .login-card { min-height: 0; }
+  .login-visual { position: static; transform: none; width: 100%; order: 2; }
+  .login-visual h1 { font-size: 14px; white-space: normal; }
   .login-panel { padding: 28px 24px; }
   .public-nav-links { display: none; }
   .radio-cards { grid-template-columns: 1fr; }
@@ -705,4 +763,197 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .search-pill { flex: 1; width: auto; min-width: 0; }
   .kicker { font-size: 9.5px; letter-spacing: 0.1em; gap: 7px; white-space: nowrap; }
   .kicker::before { width: 16px; }
+}
+
+/* ============================================================
+   视觉升级层：宣纸水墨质感 · 动效微交互 · 色彩层次
+   ============================================================ */
+
+/* --- 全局宣纸噪点纹理（feTurbulence，极淡胶片颗粒感） --- */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+  opacity: 0.28;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E");
+}
+
+/* --- 侧边栏品牌区金色分隔线 --- */
+.sidebar .brand { border-bottom: 1px solid rgba(216, 178, 115, 0.35); padding-bottom: 14px; }
+
+/* --- 首页大字书法水印 --- */
+.editorial-head { position: relative; }
+.editorial-head::after {
+  content: "选";
+  position: absolute;
+  right: -8px;
+  top: -52px;
+  font-family: "Ma Shan Zheng", "STXingkai", "华文行楷", "KaiTi", "楷体", var(--serif);
+  font-size: clamp(150px, 18vw, 250px);
+  line-height: 1;
+  color: rgba(156, 63, 94, 0.06);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* --- 实训室卡片：学院专属色带 --- */
+.studio-card { position: relative; }
+.studio-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  z-index: 3;
+  background: linear-gradient(90deg, var(--accent, var(--primary)) 0%, rgba(216, 178, 115, 0.85) 52%, transparent 88%);
+}
+
+/* --- 滚动浮现动效 --- */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.reveal { opacity: 0; }
+.reveal.revealed {
+  animation: riseIn 0.6s cubic-bezier(0.22, 0.8, 0.32, 1) both;
+  animation-delay: var(--d, 0s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal.revealed { opacity: 1; animation: none; }
+  .process-card.active::before { animation: none; }
+}
+
+/* --- 进行中阶段卡：流动渐变 --- */
+@keyframes gradFlow {
+  from { background-position: 0% 0; }
+  to { background-position: 220% 0; }
+}
+.process-card.active::before {
+  background-size: 220% 100%;
+  animation: gradFlow 2.8s linear infinite;
+}
+
+/* --- 登录页入场 --- */
+.login-brand { animation: riseIn 0.7s cubic-bezier(0.22, 0.8, 0.32, 1) both; }
+
+/* --- 登录页氛围升级：电影调色 · Ken Burns · 光斑漂移 · 卡片悬浮 · 樱花瓣 --- */
+.login-bg {
+  position: absolute;
+  inset: -4%;
+  z-index: 0;
+  background: url("/login-bg.jpg") center / cover no-repeat;
+  filter: saturate(1.15) contrast(1.06) brightness(0.92);
+  animation: kenBurns 26s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.login-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(150deg, rgba(156, 63, 94, 0.36), rgba(216, 178, 115, 0.2) 55%, rgba(58, 36, 44, 0.42));
+  mix-blend-mode: soft-light;
+}
+@keyframes kenBurns {
+  from { transform: scale(1) translate(0, 0); }
+  to { transform: scale(1.09) translate(-1.6%, 1.2%); }
+}
+.login-glow {
+  position: absolute;
+  z-index: 0;
+  width: 46vw;
+  height: 46vw;
+  max-width: 640px;
+  max-height: 640px;
+  border-radius: 50%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  filter: blur(90px);
+  opacity: 0.62;
+}
+.login-glow--a { top: -14%; right: -10%; background: radial-gradient(circle, rgba(224, 122, 152, 0.55), transparent 66%); animation: glowDriftA 17s ease-in-out infinite alternate; }
+.login-glow--b { bottom: -18%; left: -12%; background: radial-gradient(circle, rgba(216, 178, 115, 0.48), transparent 66%); animation: glowDriftB 21s ease-in-out infinite alternate; }
+/* 斜射光束：柔化的主光源 */
+.login-beam {
+  position: absolute;
+  top: -24%;
+  right: 4%;
+  z-index: 0;
+  width: 34vw;
+  max-width: 540px;
+  height: 150%;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 240, 210, 0.2), rgba(255, 240, 210, 0.07) 42%, transparent 74%);
+  clip-path: polygon(30% 0, 70% 0, 100% 100%, 30% 100%);
+  transform: rotate(9deg);
+  mix-blend-mode: screen;
+  filter: blur(38px);
+  animation: beamSway 18s ease-in-out infinite alternate;
+}
+@keyframes beamSway {
+  from { opacity: 0.4; transform: rotate(7.5deg) translateX(0); }
+  to { opacity: 0.7; transform: rotate(10.5deg) translateX(-30px); }
+}
+@keyframes glowDriftA {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-70px, 50px) scale(1.16); }
+  100% { transform: translate(30px, -40px) scale(0.94); }
+}
+@keyframes glowDriftB {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(80px, -46px) scale(1.12); }
+  100% { transform: translate(-36px, 34px) scale(0.92); }
+}
+@keyframes cardBreathe {
+  0% { opacity: 0; transform: translateY(26px); }
+  7% { opacity: 1; transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+  100% { opacity: 1; transform: translateY(4px); }
+}
+.login-card { animation: cardBreathe 9s ease-in-out 0.1s infinite alternate; }
+.login-submit { position: relative; overflow: hidden; }
+.login-submit::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -80%;
+  width: 46%;
+  background: linear-gradient(105deg, transparent, rgba(255, 236, 190, 0.5), transparent);
+  transform: skewX(-18deg);
+  pointer-events: none;
+}
+.login-submit:hover::after { left: 130%; transition: left 0.7s ease; }
+.petals { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.petals i {
+  position: absolute;
+  top: 0;
+  display: block;
+  width: 11px;
+  height: 13px;
+  background: linear-gradient(135deg, rgba(246, 216, 228, 0.95), rgba(192, 119, 141, 0.55));
+  border-radius: 90% 4% 90% 4%;
+  opacity: 0;
+  animation: petalFall linear infinite;
+}
+@keyframes petalFall {
+  0% { transform: translate3d(0, -8vh, 0) rotate(0deg); opacity: 0; }
+  9% { opacity: 0.55; }
+  82% { opacity: 0.5; }
+  100% { transform: translate3d(var(--px, 46px), 106vh, 0) rotate(340deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-bg, .login-glow, .login-beam, .login-card, .petals i { animation: none !important; }
+  .petals { display: none; }
+}
+/* 登录卡受光边缘：顶部受光、底部沉影，强化立体光感 */
+.login-card {
+  border-color: rgba(255, 238, 205, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 224, 0.5),
+    inset 0 -1px 0 rgba(24, 12, 14, 0.22),
+    0 42px 96px -44px rgba(16, 8, 10, 0.85);
 }

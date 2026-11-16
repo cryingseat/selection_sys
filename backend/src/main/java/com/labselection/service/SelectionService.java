@@ -286,11 +286,12 @@ public class SelectionService {
         SelectionBatch batch = stageGuard.current();
         stageGuard.assertStage(batch, BatchStatus.CONFIRM, BatchStatus.SUPPLEMENT);
         stageGuard.assertNotLocked(batch.getId());
-        Integer openRoundNo = null;
+        Integer roundNo = null;
         if (batch.getStatus() == BatchStatus.SUPPLEMENT) {
             SupplementRound open = supplementMapper.findOpenRound(batch.getId());
-            openRoundNo = open == null ? null : open.getRoundNo();
+            roundNo = open == null ? null : open.getRoundNo();
         }
+        final Integer openRoundNo = roundNo;
         List<Offer> offers = offerMapper.findByStudent(batch.getId(), studentId).stream()
                 .filter(o -> o.getStatus() == OfferStatus.OFFERED)
                 .filter(o -> batch.getStatus() == BatchStatus.CONFIRM

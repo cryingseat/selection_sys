@@ -100,8 +100,9 @@ async function logout() {
     <aside class="sidebar">
       <router-link to="/" class="brand">
         <span class="brand-text">
-          <strong>河北师范大学</strong>
-          <span>实训室进组选拔系统</span>
+          <strong class="calligraphy calligraphy-ink">河北师范大学</strong>
+          <i class="calligraphy-rule" aria-hidden="true"></i>
+          <span>实训室选拔系统</span>
         </span>
       </router-link>
 
@@ -142,7 +143,6 @@ async function logout() {
           </router-link>
           <div>
             <div class="topbar-title">{{ currentTitle }}</div>
-            <div class="topbar-sub">河北师范大学 · 学生实训室进组选拔系统</div>
           </div>
         </div>
         <div class="topbar-right">

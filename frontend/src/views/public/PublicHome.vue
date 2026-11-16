@@ -65,6 +65,11 @@ function collegeCount(collegeId) {
   return labs.value.filter((lab) => lab.collegeId === collegeId).length
 }
 
+function collegeAccent(collegeId) {
+  const college = colleges.value.find((item) => item.id === collegeId)
+  return college?.accentColor || '#9c3f5e'
+}
+
 function setCollege(id) {
   activeCollege.value = id
 }
@@ -121,7 +126,8 @@ function tagTint(index) {
       <div class="public-nav-inner">
         <router-link to="/" class="brand" style="padding: 0">
           <span class="brand-text">
-            <strong>河北师范大学</strong>
+            <strong class="calligraphy calligraphy-ink">河北师范大学</strong>
+            <i class="calligraphy-rule" aria-hidden="true"></i>
             <span>实训室进组选拔系统</span>
           </span>
         </router-link>
@@ -163,7 +169,7 @@ function tagTint(index) {
       </template>
 
       <template v-else-if="home">
-        <section class="editorial-head">
+        <section v-reveal class="editorial-head">
           <div>
             <p class="kicker">HEBEI NORMAL UNIVERSITY · 2026 AUTUMN</p>
             <h1>走近真实空间，<br />选择你的同行导师</h1>
@@ -175,7 +181,7 @@ function tagTint(index) {
           </p>
         </section>
 
-        <section id="labs" class="gallery-toolbar">
+        <section id="labs" v-reveal class="gallery-toolbar">
           <div class="filter-pills">
             <button class="filter-pill" :class="{ active: activeCollege === 0 }" @click="setCollege(0)">
               全部学院 <span class="count">{{ labs.length }}</span>
@@ -208,7 +214,13 @@ function tagTint(index) {
         </div>
 
         <section v-else class="studio-grid">
-          <article v-for="lab in filteredLabs" :key="lab.id" class="studio-card">
+          <article
+            v-for="(lab, index) in filteredLabs"
+            :key="lab.id"
+            v-reveal
+            class="studio-card"
+            :style="{ '--accent': collegeAccent(lab.collegeId), '--d': `${Math.min(index, 6) * 70}ms` }"
+          >
             <div class="studio-cover">
               <img v-if="lab.coverImage" :src="lab.coverImage" :alt="lab.name" />
               <div v-else class="cover-fallback">{{ lab.code }}</div>
@@ -270,7 +282,7 @@ function tagTint(index) {
           </article>
         </section>
 
-        <section id="process" class="section-block">
+        <section id="process" v-reveal class="section-block">
           <div class="section-block-head">
             <div>
               <p class="kicker">SELECTION PROCESS</p>
@@ -289,7 +301,7 @@ function tagTint(index) {
           </div>
         </section>
 
-        <section id="news" class="grid-2">
+        <section id="news" v-reveal class="grid-2">
           <div class="card card-pad">
             <div class="section-head">
               <div class="section-title">通知公告</div>
