@@ -105,8 +105,8 @@ onBeforeUnmount(stop)
 .guide-hero {
   padding: 26px 26px 22px;
   background:
-    radial-gradient(120% 120% at 100% 0, rgba(216, 178, 115, 0.18), transparent 55%),
-    linear-gradient(135deg, #fbf8f5, #f7f0f1);
+    radial-gradient(120% 120% at 100% 0, rgba(185, 212, 88, 0.18), transparent 55%),
+    linear-gradient(135deg, #f8fbf0, #fbe9ee);
 }
 .guide-kicker {
   display: inline-flex;
@@ -115,7 +115,7 @@ onBeforeUnmount(stop)
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.18em;
-  color: var(--gold-deep, #9a7137);
+  color: var(--gold-deep, #6d9612);
   margin-bottom: 10px;
 }
 .guide-kicker::before {
@@ -123,7 +123,7 @@ onBeforeUnmount(stop)
   width: 20px;
   height: 2px;
   border-radius: 2px;
-  background: linear-gradient(90deg, var(--gold, #d8b273), transparent);
+  background: linear-gradient(90deg, var(--gold, #a3c23b), transparent);
 }
 .guide-hero h3 {
   font-family: var(--serif);
@@ -160,8 +160,8 @@ onBeforeUnmount(stop)
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 2px solid var(--primary, #b04863);
-  color: var(--primary, #b04863);
+  border: 2px solid var(--primary, #4a6714);
+  color: var(--primary, #4a6714);
   font-weight: 800;
   font-size: 12px;
 }
@@ -172,7 +172,7 @@ onBeforeUnmount(stop)
   gap: 12px;
   padding: 14px 26px;
   border-top: 1px solid var(--line);
-  background: var(--surface-2, #faf7f6);
+  background: var(--surface-2, #f4f7ec);
 }
 .guide-hint {
   font-size: 11px;

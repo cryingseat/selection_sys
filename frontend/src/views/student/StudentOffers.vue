@@ -86,7 +86,7 @@ async function submitDecision() {
       <span>当前处于「{{ resolveMeta(batchStatus, batch.status).label }}」阶段。拟录取确认将在确认阶段开放。</span>
     </div>
 
-    <div v-if="assignment" class="card card-pad" style="background: linear-gradient(120deg, #edf9f4, #fff)">
+    <div v-if="assignment" class="card card-pad" style="background: linear-gradient(120deg, #edf5dd, #fff 60%, #fbe9ee)">
       <div class="flex flex-wrap" style="justify-content: space-between; gap: 14px">
         <div>
           <div class="pill pill--green"><span class="dot" />已完成确认</div>

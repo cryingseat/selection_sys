@@ -66,6 +66,8 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       localStorage.removeItem(TOKEN_KEY)
       localStorage.removeItem(USER_KEY)
+      // 重新登录后允许再次执行引导弹窗检测
+      sessionStorage.removeItem('selection_guide_checked')
     }
   }
 })

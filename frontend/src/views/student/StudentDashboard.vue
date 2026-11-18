@@ -68,9 +68,7 @@ const guide = computed(() => {
   const hasActive = activeOffers.value.length > 0
   const sr = supplementRound.value
 
-  if (assignment.value) {
-    return { key: 'assigned', stage: '已完成', title: '你已确定最终去向', desc: `已确认进入「${assignment.value.labName}」，可查看入组说明。`, actionLabel: '查看结果', target: '/student/result' }
-  }
+  // 只在存在未完成动作时给出引导：已确定最终去向 / 公示阶段不弹窗
   if (b === 'INTENT_OPEN' && (!app || app.status === 'WITHDRAWN' || app.status === 'DRAFT')) {
     return { key: 'intent', stage: '意向填报', title: '当前为意向填报阶段', desc: '选择最多 3 位导师，表达你的真实兴趣，提交后等待面试安排。', actionLabel: '去填报意向', target: '/student/application' }
   }
@@ -80,14 +78,14 @@ const guide = computed(() => {
   if (sr && sr.status === 'OPEN') {
     return { key: 'supplement', stage: '分轮补录', title: '补录填报进行中', desc: `截止 ${fmt(sr.endAt)}，可重新填报最多 3 个补录意向。`, actionLabel: '去补录填报', target: '/student/supplement' }
   }
-  if (b === 'PUBLICITY') {
-    return { key: 'publicity', stage: '结果公示', title: '最终名单公示中', desc: '查看你的最终去向与入组说明。', actionLabel: '查看公示结果', target: '/student/result' }
-  }
   return null
 })
 
 function maybeShowGuide() {
-  // 只要存在未完成的关键动作，每次进入工作台都再次弹窗提醒
+  // 每个登录会话只检测一次：登录后首次进入工作台时，存在未完成动作才弹窗，之后点回「我的选拔」不再自动弹
+  const FLAG = 'selection_guide_checked'
+  if (sessionStorage.getItem(FLAG)) return
+  sessionStorage.setItem(FLAG, '1')
   if (guide.value) guideOpen.value = true
 }
 
@@ -151,7 +149,7 @@ async function declineAll() {
   <div v-if="loading" class="card card-pad"><div class="loading-block"><div class="spinner" />正在加载你的选拔进度…</div></div>
 
   <template v-else-if="data">
-    <section class="card card-pad" style="background: linear-gradient(120deg, #fbf9f8, #fff 55%, #f7f0f1)">
+    <section class="card card-pad" style="background: linear-gradient(120deg, #f8fbf0, #fff 55%, #fbe9ee)">
       <div class="flex flex-wrap" style="justify-content: space-between; gap: 18px">
         <div style="min-width: 0">
           <div class="flex flex-wrap">
@@ -175,10 +173,10 @@ async function declineAll() {
     </section>
 
     <div class="stat-grid">
-      <StatCard label="报名状态" :value="resolveMeta(applicationStatus, application?.status || 'DRAFT').label" :hint="application ? `${(application.intents || []).length} 个平行意向` : '尚未填报'" tint="#f8edf1" />
-      <StatCard label="面试考核" :value="completedInterviews.length ? `${completedInterviews.length} 场已完成` : pendingInterviews.length ? `${pendingInterviews.length} 场待参加` : '待安排'" hint="以实训室通知为准" tint="#f7f0f1" />
-      <StatCard label="拟录取" :value="offers.length" hint="可同时获得多个意向，只能确认一个" tint="#fff4e2" />
-      <StatCard label="最终去向" :value="assignment ? assignment.labName : '待定'" :hint="assignment ? `${assignment.mentorName} · ${resolveMeta(assignmentSource, assignment.source).label}` : '公示后确定'" tint="#e8f7f1" />
+      <StatCard label="报名状态" :value="resolveMeta(applicationStatus, application?.status || 'DRAFT').label" :hint="application ? `${(application.intents || []).length} 个平行意向` : '尚未填报'" tint="#fbe3ea" />
+      <StatCard label="面试考核" :value="completedInterviews.length ? `${completedInterviews.length} 场已完成` : pendingInterviews.length ? `${pendingInterviews.length} 场待参加` : '待安排'" hint="以实训室通知为准" tint="#fbe9ee" />
+      <StatCard label="拟录取" :value="offers.length" hint="可同时获得多个意向，只能确认一个" tint="#f6f2cf" />
+      <StatCard label="最终去向" :value="assignment ? assignment.labName : '待定'" :hint="assignment ? `${assignment.mentorName} · ${resolveMeta(assignmentSource, assignment.source).label}` : '公示后确定'" tint="#e6f2d8" />
     </div>
 
     <div class="split">

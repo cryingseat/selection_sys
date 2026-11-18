@@ -55,14 +55,14 @@ const guide = computed(() => {
   if (b === 'INTERVIEW') {
     return { key: 'interview', stage: '面试与初选', title: '当前为面试考核阶段', desc: '为已报名的学生安排并完成面试，记录评分与结论。', actionLabel: '去面试考核', target: '/mentor/interviews' }
   }
-  if (b === 'CONFIRM' || b === 'SUPPLEMENT') {
-    return { key: 'confirm', stage: '确认 / 补录', title: '关注学生确认与补录进展', desc: '查看拟录取确认情况，处理候补与补录意向。', actionLabel: '查看我的学生', target: '/mentor/students' }
-  }
   return null
 })
 
 function maybeShowGuide() {
-  // 只要存在未完成的关键动作，每次进入工作台都再次弹窗提醒
+  // 每个登录会话只检测一次：登录后首次进入工作台时，存在未完成动作才弹窗，之后点回工作台不再自动弹
+  const FLAG = 'selection_guide_checked'
+  if (sessionStorage.getItem(FLAG)) return
+  sessionStorage.setItem(FLAG, '1')
   if (guide.value) guideOpen.value = true
 }
 
@@ -83,7 +83,7 @@ function onGuideGo() {
   <div v-if="loading" class="card card-pad"><div class="loading-block"><div class="spinner" />正在加载工作台…</div></div>
 
   <template v-else-if="data">
-    <section class="card card-pad" style="background: linear-gradient(120deg, #fbf9f8, #fff 60%, #f7f0f1)">
+    <section class="card card-pad" style="background: linear-gradient(120deg, #f8fbf0, #fff 60%, #fbe9ee)">
       <div class="flex flex-wrap" style="justify-content: space-between; gap: 18px">
         <div>
           <div class="flex"><span class="pill pill--violet">{{ lab.name }}</span><span class="pill pill--gray">{{ mentor.title }}</span><span v-if="mentor.collegeName" class="pill pill--gray">{{ mentor.collegeName }}</span></div>
@@ -101,10 +101,10 @@ function onGuideGo() {
     </section>
 
     <div class="stat-grid">
-      <StatCard label="报名学生" :value="stats.applicantCount" hint="报名你的学生数" tint="#f8edf1" />
-      <StatCard label="待处理意向" :value="stats.pendingCount" hint="需要给出初选结论" tint="#fff4e2" />
-      <StatCard label="已完成面试" :value="stats.interviewCount" hint="本实训室统一面试" tint="#f7f0f1" />
-      <StatCard label="候补 / 拟录取" :value="`${stats.waitlistCount} / ${stats.offerCount}`" hint="拟录取待学生确认" tint="#e8f7f1" />
+      <StatCard label="报名学生" :value="stats.applicantCount" hint="报名你的学生数" tint="#fbe3ea" />
+      <StatCard label="待处理意向" :value="stats.pendingCount" hint="需要给出初选结论" tint="#f6f2cf" />
+      <StatCard label="已完成面试" :value="stats.interviewCount" hint="本实训室统一面试" tint="#fbe9ee" />
+      <StatCard label="候补 / 拟录取" :value="`${stats.waitlistCount} / ${stats.offerCount}`" hint="拟录取待学生确认" tint="#e6f2d8" />
     </div>
 
     <div class="split">

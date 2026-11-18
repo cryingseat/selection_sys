@@ -88,10 +88,10 @@ async function submit() {
   </PageHeader>
 
   <div class="stat-grid">
-    <StatCard label="意向总数" :value="rows.length" hint="报名你的学生" tint="#f8edf1" />
-    <StatCard label="待处理" :value="pendingCount" hint="尚未提交结论" tint="#fff4e2" />
-    <StatCard label="候补" :value="waitlistCount" hint="按顺位参与递补" tint="#fff6df" />
-    <StatCard label="名额使用" :value="`${activeOffers} / ${quota}`" hint="拟录取 + 已确认" tint="#e8f7f1" />
+    <StatCard label="意向总数" :value="rows.length" hint="报名你的学生" tint="#fbe3ea" />
+    <StatCard label="待处理" :value="pendingCount" hint="尚未提交结论" tint="#f6f2cf" />
+    <StatCard label="候补" :value="waitlistCount" hint="按顺位参与递补" tint="#f6f2cf" />
+    <StatCard label="名额使用" :value="`${activeOffers} / ${quota}`" hint="拟录取 + 已确认" tint="#e6f2d8" />
   </div>
 
   <div class="card card-pad" style="padding: 13px 18px">
